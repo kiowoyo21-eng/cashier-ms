@@ -1,0 +1,22 @@
+export type Role='Cashier'|'Admin'|'PB';
+export type POS={id:string;branch:string;client:string;phone:string;plate:string;vehicle:string;concern:string;items:{name:string;qty:number;price:number;type:string}[];payments:{method:string;amount:number}[];cogs:{name:string;qty:number;cost:number}[];status:'Pending'|'Closed';date:string;parent?:string};
+export type Fund={id:string;account:'RF'|'RFP';branch:string;kind:'Expense'|'Replenishment';description:string;category:string;amount:number;date:string;actor:string;signature:string;plate?:string;supplier?:string;qty?:number;unitCost?:number;linkedPos?:string;receipt?:string;status:'Pending'|'Approved';};
+export type Req={id:string;fundId:string;actor:string;type:'Edit Details'|'Change Branch'|'Both';reason:string;proposed:{description?:string;plate?:string;branch?:string;supplier?:string;qty?:number;unitCost?:number};status:'Pending'|'Approved'|'Rejected';created:string;reviewer?:string};
+export type Log={id:string;action:string;who:string;when:string;detail:string};
+export type Supplier={id:string;name:string;phone:string;category:string};
+export type Count={id:string;account:'RF'|'Funds'|'Sales';kind:'BOD'|'EOD';amount:number;date:string;actor:string;note:string};
+export type State={pos:POS[];funds:Fund[];requests:Req[];logs:Log[];suppliers:Supplier[];counts:Count[]};
+export const branches=['UC Mandaluyong','UC Quezon City','UC Las Pinas','MM Mandaluyong'];
+export const money=(v:number)=>'₱'+(Number.isFinite(v)?v:0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+export const uid=(prefix:string)=>`${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+export const now=()=>new Date().toISOString();
+export const posTotal=(p:POS)=>p.items.reduce((n,i)=>n+i.qty*i.price,0);
+export const paid=(p:POS)=>p.payments.reduce((n,i)=>n+i.amount,0);
+export const baseCogs=(p:POS)=>p.cogs.reduce((n,i)=>n+i.qty*i.cost,0);
+export const totalCogs=(p:POS,s:State)=>baseCogs(p)+s.funds.filter(f=>f.account==='RFP'&&f.linkedPos===p.id&&f.kind==='Expense').reduce((n,f)=>n+f.amount,0);
+export const starter:State={pos:[{id:'POS-DEMO-001',branch:branches[0],client:'Maria Santos',phone:'09170000000',plate:'ABC 1234',vehicle:'Toyota Vios',concern:'Brake inspection',items:[{name:'Brake service',qty:1,price:4200,type:'Service'}],payments:[{method:'Cash',amount:4200}],cogs:[{name:'Cleaning material',qty:1,cost:400}],status:'Closed',date:now()},{id:'POS-DEMO-002',branch:branches[0],client:'Juan Reyes',phone:'09171111111',plate:'XYZ 8821',vehicle:'Nissan Navara',concern:'Engine vibration',items:[{name:'Engine diagnostic',qty:1,price:1500,type:'Service'}],payments:[],cogs:[],status:'Pending',date:now()}],funds:[{id:'RFP-DEMO-001',account:'RFP',branch:branches[0],kind:'Expense',description:'Oil Filter',category:'Parts',amount:650,date:now(),actor:'pbacc',signature:'Demo acknowledgment',plate:'XYZ 8821',supplier:'Metro Auto Parts',qty:1,unitCost:650,status:'Approved'},{id:'RF-DEMO-001',account:'RF',branch:branches[0],kind:'Replenishment',description:'Starting operating fund',category:'Replenishment',amount:20000,date:now(),actor:'admin',signature:'Demo acknowledgment',status:'Approved'}],requests:[],logs:[],suppliers:[{id:'SUP-001',name:'Metro Auto Parts',phone:'09170000000',category:'Automotive Parts'}],counts:[]};
+const DBNAME='ucmm-cms-browser-v1';const STORE='records';
+function database():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const r=indexedDB.open(DBNAME,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+export async function readState():Promise<State>{const db=await database();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readonly');const q=tx.objectStore(STORE).get('main');q.onsuccess=()=>resolve(q.result??structuredClone(starter));q.onerror=()=>reject(q.error);tx.oncomplete=()=>db.close()})}
+export async function saveState(s:State):Promise<void>{const db=await database();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(s,'main');tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)}})}
+export function normalizePlate(p:string){return p.toUpperCase().replace(/[^A-Z0-9]/g,'')}
