@@ -15,19 +15,19 @@ export interface Receipt {name:string;data:string}
 export interface FundEntry {
   id:string;no:string;fund:Fund;kind:'expense'|'replenishment';branch:BranchId;date:string;amount:number;category:string;payee:string;vat:'VAT'|'Non-VAT';voucher:string;receiptNo:string;tin:string;description:string;notes:string;proof?:Receipt;signature?:string;
   status:Status;createdBy:string;createdAt:string;decisionBy?:string;decisionAt?:string;decisionNote?:string;
-  plate?:string;quantity?:number;unitCost?:number;linkedPosId?:string;
+  plate?:string;quantity?:number;unitCost?:number;linkedPosId?:string;checkNo?:string;bank?:string;depositDate?:string;
 }
-export interface POSLine {id:string;type:'Service'|'Part';name:string;qty:number;price:number;cost:number;}
+export interface POSLine {id:string;type:'Service'|'Part';name:string;qty:number;price:number;cost:number;supplier?:string;receiptNo?:string;proof?:Receipt;}
 export interface POSPayment {id:string;mode:'Cash'|'GCash'|'Bank Transfer'|'Card';amount:number;date:string;}
 export interface POS {id:string;no:string;branch:BranchId;date:string;client:string;phone:string;vehicle:string;plate:string;concern:string;items:POSLine[];payments:POSPayment[];status:'Pending'|'Closed';parentId?:string;createdBy:string;createdAt:string;closedAt?:string;}
-export interface Count {id:string;branch:BranchId;userId:string;date:string;kind:'BOD'|'EOD';actual:number;expected:number;difference:number;notes:string;createdAt:string;}
+export interface Count {id:string;branch:BranchId;userId:string;date:string;kind:'BOD'|'EOD';actual:number;expected:number;difference:number;notes:string;createdAt:string;denominations?:Record<string,number>;signature?:string;scope?:'Sales Cash'|'RF'|'RFP';}
 export interface Incident {id:string;branch:BranchId;userId:string;date:string;type:'Missed Opening'|'Missed Closing'|'Cash Discrepancy'|'Expense Explanation';detail:string;status:'Required'|'Submitted'|'Reviewed';explanation:string;createdAt:string;submittedAt?:string;entryId?:string;reviewedAt?:string;}
-export interface Turnover {id:string;branch:BranchId;date:string;amount:number;notes:string;signature?:string;createdBy:string;createdAt:string;}
+export interface Turnover {id:string;branch:BranchId;date:string;amount:number;notes:string;signature?:string;createdBy:string;createdAt:string;kind?:'Sales'|'Funds';expected?:number;actual?:number;variance?:number;}
 export interface ChangeRequest {id:string;type:'Edit RFP'|'Change Branch';entryId:string;branch:BranchId;requestedBy:string;changes:Partial<FundEntry>;original?:Partial<FundEntry>;reason:string;status:'Pending'|'Approved'|'Rejected';createdAt:string;decidedBy?:string;}
 export interface Audit {id:string;at:string;by:string;action:string;detail:string;}
 export interface Database {
   users:User[];fundEntries:FundEntry[];pos:POS[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
-  settings:{rfBase:Record<BranchId,number>;rfpBase:Record<BranchId,number>;categories:string[]};
+  settings:{rfBase:Record<BranchId,number>;rfpBase:Record<BranchId,number>;categories:string[];signatories?:{checked:string;approved:string};reportLogo?:Receipt};
 }
 export const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ID-${Date.now()}-${Math.random().toString(36).slice(2,7)}`);
 export function todayPH():string {return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
@@ -50,10 +50,10 @@ export function createSeed():Database {
   const rf2 = entry('UCQC-Rotating Fund-00000001','UCQC',680,'Office Mart','Office Supplies','u-admin','RF');
   const rfp = entry('UCM-RFP-00000001','UCM',3800,'Auto Parts Supplier','Automotive Parts','u-pb','RFP');rfp.plate='ABC1234';rfp.quantity=2;rfp.unitCost=1900;
   const pos:POS[]=[{id:uid(),no:'UCM-POS-00000001',branch:'UCM',date,client:'Sample Customer',phone:'',vehicle:'Toyota Vios',plate:'ABC1234',concern:'Routine service',items:[{id:uid(),type:'Service',name:'Oil Change',qty:1,price:1800,cost:450},{id:uid(),type:'Part',name:'Engine Oil',qty:1,price:2200,cost:1250}],payments:[{id:uid(),mode:'Cash',amount:4000,date}],status:'Closed',createdBy:'u-cashier',createdAt:new Date().toISOString(),closedAt:new Date().toISOString()}];
-  return {users,fundEntries:[rf,rf2,rfp],pos,counts:[],incidents:[],turnovers:[],requests:[],audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Demo initialized',detail:'Sample data created; amounts are illustrative only'}],settings:{rfBase:base(),rfpBase:rfpBase(),categories:[...RF_CATEGORIES]}};
+  return {users,fundEntries:[rf,rf2,rfp],pos,counts:[],incidents:[],turnovers:[],requests:[],audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Demo initialized',detail:'Sample data created; amounts are illustrative only'}],settings:{rfBase:base(),rfpBase:rfpBase(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
 }
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
-export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];return d;}}}catch{}return createSeed();}
+export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));return d;}}}catch{}return createSeed();}
 export function storeDB(db:Database):boolean {try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));return true;}catch{return false;}}
 export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
@@ -67,7 +67,33 @@ export function nextNumber(db:Database,branch:BranchId,type:'RF'|'RFP'|'POS'):st
 export function log(db:Database,by:string,action:string,detail:string):Database {return {...db,audit:[{id:uid(),at:new Date().toISOString(),by,action,detail},...db.audit].slice(0,1000)};}
 export const posTotal=(p:POS)=>p.items.reduce((v,i)=>v+i.qty*i.price,0);
 export const paidTotal=(p:POS)=>p.payments.reduce((v,i)=>v+i.amount,0);
-export const posCOGS=(p:POS)=>p.items.reduce((v,i)=>v+i.qty*i.cost,0);
+/** RFP-linked purchases supply authoritative part cost where part name and qty match a manual POS part line.
+ * Matching replaces (rather than adds to) that manual cost to prevent double counting. */
+export function posCostBreakdown(p:POS,db?:Database){
+  const lines=p.items.map(i=>({id:i.id,description:i.name,source:'POS entry',amount:i.qty*i.cost}));
+  if(!db)return lines;
+  const rfp=db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&e.linkedPosId===p.id);
+  const matched=new Set<string>();
+  const key=(s:string)=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
+  for(const part of rfp){
+    const manual=p.items.find(i=>i.type==='Part'&&!matched.has(i.id)&&key(i.name)===key(part.description)&&i.qty===(part.quantity||1));
+    if(manual){matched.add(manual.id);const row=lines.find(x=>x.id===manual.id);if(row){row.amount=part.amount;row.source=`RFP linked: ${part.no}`;}}
+    else lines.push({id:part.id,description:part.description,source:`RFP linked: ${part.no}`,amount:part.amount});
+  }
+  return lines;
+}
+export const posCOGS=(p:POS,db?:Database)=>posCostBreakdown(p,db).reduce((v,i)=>v+i.amount,0);
+export function posClosedDate(p:POS):string{if(!p.closedAt)return p.date;const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(p.closedAt));const val=(type:string)=>parts.find(x=>x.type===type)?.value||'';return `${val('year')}-${val('month')}-${val('day')}`;}
+export function reportDateMatch(date:string,from='',to=''){return (!from||date>=from)&&(!to||date<=to);}
+export function amountInWords(amount:number){
+  const ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const under1000=(x:number):string=>{const a=[];if(x>=100){a.push(ones[Math.floor(x/100)]+' Hundred');x%=100;}if(x>=20){a.push(tens[Math.floor(x/10)]);x%=10;}if(x>0)a.push(ones[x]);return a.join(' ');};
+  const absolute=Math.round(Math.max(0,amount)*100),pesosPart=Math.floor(absolute/100),centavos=absolute%100;
+  let remaining=pesosPart;const groups:string[]=[];
+  for(const [value,name] of [[1e9,'Billion'],[1e6,'Million'],[1000,'Thousand'],[1,'']] as [number,string][]){const part=Math.floor(remaining/value);if(part){groups.push(`${under1000(part)} ${name}`.trim());remaining%=value;}}
+  return `${groups.join(' ')||'Zero'} Pesos and ${String(centavos).padStart(2,'0')}/100 Only`;
+}
 export function normalizePlate(plate:string){return plate.toUpperCase().replace(/[^A-Z0-9]/g,'');}
 export function csvEscape(value:unknown):string {let s=String(value??'');if(/^[=+@\t\r]/.test(s) || /^-[^0-9]/.test(s))s="'"+s;return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
 export function downloadFile(name:string,content:string,mime='text/csv;charset=utf-8'){
@@ -76,5 +102,18 @@ export function downloadFile(name:string,content:string,mime='text/csv;charset=u
 
 export function categoryTotals(entries:FundEntry[]) {return entries.filter(e=>e.fund==='RF'&&e.kind==='expense'&&e.status!=='Rejected').reduce<Record<string,number>>((result,e)=>{result[e.category]=(result[e.category]||0)+e.amount;return result;},{});}
 export function matchingPOS(db:Database,branch:BranchId,plate:string) {return db.pos.filter(p=>p.branch===branch&&normalizePlate(p.plate)===normalizePlate(plate)).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));}
-export function disbursementSummary(db:Database,branch:BranchId,fund:Fund){const base=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch];const rows=db.fundEntries.filter(e=>e.branch===branch&&e.fund===fund&&e.status!=='Rejected');const expenses=rows.filter(e=>e.kind==='expense').reduce((n,e)=>n+e.amount,0);const deposits=rows.filter(e=>e.kind==='replenishment'&&e.status==='Approved').reduce((n,e)=>n+e.amount,0);const remaining=base+deposits-expenses;return {base,expenses,deposits,remaining,amountRequested:Math.max(0,expenses-deposits)};}
+/** Report accounting: opening is cumulative balance immediately before `from`.
+ * Selected-period expenses and approved replenishments reconcile exactly to the reported closing.
+ * The fund target is the configured starting/target fund balance. */
+export function disbursementSummary(db:Database,branch:BranchId,fund:Fund,from='',to=''){
+ const base=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
+ const rows=db.fundEntries.filter(e=>e.branch===branch&&e.fund===fund&&e.status!=='Rejected');
+ const signed=(e:FundEntry)=>e.kind==='expense'?-e.amount:e.status==='Approved'?e.amount:0;
+ const opening=base+rows.filter(e=>!!from&&e.date<from).reduce((n,e)=>n+signed(e),0);
+ const period=rows.filter(e=>reportDateMatch(e.date,from,to));
+ const expenses=period.filter(e=>e.kind==='expense').reduce((n,e)=>n+e.amount,0);
+ const deposits=period.filter(e=>e.kind==='replenishment'&&e.status==='Approved').reduce((n,e)=>n+e.amount,0);
+ const remaining=opening+deposits-expenses;
+ return {base,opening,expenses,deposits,remaining,amountRequested:Math.max(0,base-remaining),period,checkDeposits:period.filter(e=>e.kind==='replenishment'&&e.status==='Approved')};
+}
 export function isFridayPH(date:string){return new Date(`${date}T12:00:00+08:00`).getUTCDay()===5;}

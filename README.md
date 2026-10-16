@@ -1,4 +1,14 @@
-# Underchargers Fund Management System — PWA Frontend (v2.0)
+# Version 3 — Reports-First CMS Frontend
+
+**Latest update:** Added specialized printable A4 landscape reports, date-range ledger balances, Closed-date Sales, RFP-linked COGS, denomination cash-count sheets, separate Friday Sales/Funds Turnovers and configurable print logo/signatories. See `REVISION_STATUS_V3.md` for details and remaining limitations. **Supabase is not yet connected.**
+
+**Report previews:** Log in → Reports → choose report type → select branch (Admin must pick one) and date range → Preview Selected Report → Print / Save as PDF. To upload your official logo and signatory names, use Admin → Settings.
+
+**Very important:** Frontend is an insecure *local demo*. Export JSON before upgrades. Existing v2 browser data is preserved under the same localStorage key. PDF originals are not merged into the image-receipts printable report. Full production build remains unverified until dependencies are installed.
+
+---
+
+# Underchargers Fund Management System — PWA Frontend (v3.0)
 
 **Frontend-first prototype** for Underchargers / Mastermind, covering **Cashier**, **PB (Parts Buyer)**, and **Admin** across UC Quezon City, UC Mandaluyong, UC Las Piñas and MM Mandaluyong.
 

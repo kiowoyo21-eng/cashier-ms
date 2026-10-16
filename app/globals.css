@@ -36,3 +36,11 @@
 @media(max-width:900px){.login-screen{grid-template-columns:1fr!important}.login-side{display:none!important}.login-panel{grid-column:1;grid-row:1;max-width:480px;padding:30px 23px}.login-brand{margin-bottom:35px}.login-foot{margin-top:28px}.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.summary-values{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-values>div:last-child{grid-column:span 2}.category-grid{grid-template-columns:1fr 1fr;padding:10px;gap:6px}.category-item{flex-direction:column;padding:8px}.category-item strong{text-align:left}.summary-values strong{font-size:13px}.settings-utility .compact-fields{grid-template-columns:1fr}.report-tools{justify-content:flex-start}.request-preview>div,.comparison>div{grid-template-columns:1fr 1fr}.request-preview span,.comparison span{grid-column:1/-1}.summary-titles{align-items:flex-start}.disbursement-summary{padding:12px}.related-pos{max-width:100%}}
 .report-category-summary{border-top:1px solid #e9eaed;padding:14px}.report-category-summary>strong{display:block;margin:0 0 10px;font-size:12px}.report-category-summary .category-grid{padding:0}
+
+/* V3 responsive reporting and cash-count additions */
+.report-template-picker{display:flex;flex-wrap:wrap;gap:10px;align-items:end;padding:12px 18px;border-bottom:1px solid var(--line);background:#fffdf5}
+.report-template-picker>.field{min-width:225px;max-width:360px;flex:1}.report-template-picker>.button{margin:0}.report-template-picker>.muted{flex:1 1 100%;margin:0}
+.denom-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.denom-grid .field input{min-width:0}
+.report-tools{flex-wrap:wrap}
+@media(max-width:900px){.denom-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.report-template-picker>.field{max-width:none}}
+@media(max-width:580px){.denom-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-template-picker{padding:12px}.report-template-picker>.button{width:100%}}
