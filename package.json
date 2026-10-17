@@ -1,13 +1,13 @@
 {
   "name": "underchargers-fund-management-pwa",
-  "version": "9.0.0",
+  "version": "9.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:logic": "node tests/logic-smoke.cjs && node tests/revisions-smoke.cjs && node tests/v3-print-fixtures.cjs && node tests/v4-disbursement-smoke.cjs && node tests/v5-revisions-smoke.cjs && node tests/v6-automatic-link-smoke.cjs && node tests/v7-branch-approvals-smoke.cjs && node tests/v7-print-fixtures.cjs && node tests/v8-stock-out-smoke.cjs && node tests/v8.3-product-permissions-smoke.cjs && node tests/v8.4-empty-inventory-smoke.cjs && node tests/v8.5-bulk-scan-smoke.cjs && node tests/v8.6-hybrid-scan-smoke.cjs && node tests/v8.7-draft-stockin-smoke.cjs && node tests/v8.8-initial-stock-smoke.cjs && node tests/v8.9-stock-persistence-smoke.cjs && node tests/v9-pending-pricing-smoke.cjs",
+    "test:logic": "node tests/logic-smoke.cjs && node tests/revisions-smoke.cjs && node tests/v3-print-fixtures.cjs && node tests/v4-disbursement-smoke.cjs && node tests/v5-revisions-smoke.cjs && node tests/v6-automatic-link-smoke.cjs && node tests/v7-branch-approvals-smoke.cjs && node tests/v7-print-fixtures.cjs && node tests/v8-stock-out-smoke.cjs && node tests/v8.3-product-permissions-smoke.cjs && node tests/v8.4-empty-inventory-smoke.cjs && node tests/v8.5-bulk-scan-smoke.cjs && node tests/v8.6-hybrid-scan-smoke.cjs && node tests/v8.7-draft-stockin-smoke.cjs && node tests/v8.8-initial-stock-smoke.cjs && node tests/v8.9-stock-persistence-smoke.cjs && node tests/v9.1-cost-only-smoke.cjs",
     "test:reports": "node tests/v3-print-fixtures.cjs",
     "test:disbursement": "node tests/v4-disbursement-smoke.cjs && node tests/v3-print-fixtures.cjs",
     "test:v5": "node tests/v5-revisions-smoke.cjs",

@@ -43,7 +43,7 @@ export interface FundEntry {
   accountingBy?:string;accountingAt?:string;presidentBy?:string;presidentAt?:string;receivedAt?:string;
 }
 export type InventoryCategory = 'Automotive Parts & Products'|'Shop Supplies';
-export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;sellPrice:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;updatedAt?:string;updatedBy?:string;archivedAt?:string;trackingMode?:'quantity'|'serialized';priceConfigured?:boolean;pendingInitialQty?:number;pendingUnitCodes?:string[];}
+export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;/** Legacy stored value; not used for POS pricing. */sellPrice?:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;updatedAt?:string;updatedBy?:string;archivedAt?:string;trackingMode?:'quantity'|'serialized';priceConfigured?:boolean;pendingInitialQty?:number;pendingUnitCodes?:string[];}
 /** Append-only movement ledger. StockOut and StockReturn records must never be mutated. */
 export interface StockMovement {id:string;productId:string;branch:BranchId;kind:'StockIn'|'StockOut'|'StockReturn';qty:number;unitCost:number;posId?:string;sourceStockOutId?:string;by:string;at:string;notes?:string;unitCodes?:string[];receiptId?:string;}
 export interface StockReceiptLine {productId:string;qty:number;unitCodes?:string[];}
@@ -168,18 +168,21 @@ export function pendingReturnQty(db:Database,stockOutId:string):number {
 }
 /** Pure, checked ledger operations make duplicate scans and unauthorized stock changes testable. */
 /** Demo data permission guard. Production must enforce this in Supabase RLS/server APIs too. */
-export type ProductDetails = Pick<InventoryProduct,'barcode'|'name'|'category'|'unit'|'sellPrice'|'unitCost'|'reorderAt'|'trackingMode'>;
+export type ProductDetails = Pick<InventoryProduct,'barcode'|'name'|'category'|'unit'|'unitCost'|'reorderAt'|'trackingMode'>;
 export type NewInventoryProduct = ProductDetails & {branch:BranchId;initialQty:number;initialUnitCodes?:string[]};
-/** Admin scan-first registration. No price is accepted here; costs and sale prices are configured after Submit All. */
+/** Admin scan-first registration. No cost or selling price on the initial scan/name form. */
 export type PendingInventoryRegistration = {
  branch:BranchId;barcode:string;name:string;category:InventoryCategory;unit:string;reorderAt:number;
  trackingMode:'quantity'|'serialized';initialQty:number;initialUnitCodes?:string[];
 };
-export type ProductPriceUpdate = {productId:string;unitCost:number;sellPrice:number};
-export const needsPriceConfiguration=(p:InventoryProduct)=>p.priceConfigured===false;
+export type ProductCostUpdate = {productId:string;unitCost:number};
+/** Legacy exported name retained for existing integrations; selling price is not a product-master field. */
+export type ProductPriceUpdate = ProductCostUpdate;
+export const needsCostConfiguration=(p:InventoryProduct)=>p.priceConfigured===false;
+export const needsPriceConfiguration=needsCostConfiguration;
 
 /** Atomic Admin registration of scanned physical products into Pending Stock.
- * No Stock In movement and no available quantity are posted until prices are configured. */
+ * No Stock In movement and no available quantity are posted until actual unit cost is configured. */
 export function registerPendingInventoryProducts(db:Database,inputs:PendingInventoryRegistration[],by:string):Database {
  requireAdmin(db,by);
  if(!inputs.length)throw new Error('Scan and name at least one product.');
@@ -201,33 +204,36 @@ export function registerPendingInventoryProducts(db:Database,inputs:PendingInven
    if(codes.length!==input.initialQty||new Set(codes).size!==codes.length||codes.some(code=>allUnitCodes.has(code)))throw new Error(`Unique unit codes required for every physically counted ${name}.`);
    codes.forEach(code=>allUnitCodes.add(code));
   }
-  return {id:uid(),barcode,name,category:input.category,branch:input.branch,unit,unitCost:0,sellPrice:0,openingQty:0,reorderAt:input.reorderAt,createdAt:new Date().toISOString(),trackingMode:input.trackingMode,priceConfigured:false,pendingInitialQty:input.initialQty,...(input.trackingMode==='serialized'?{pendingUnitCodes:codes}:{})};
+  return {id:uid(),barcode,name,category:input.category,branch:input.branch,unit,unitCost:0,openingQty:0,reorderAt:input.reorderAt,createdAt:new Date().toISOString(),trackingMode:input.trackingMode,priceConfigured:false,pendingInitialQty:input.initialQty,...(input.trackingMode==='serialized'?{pendingUnitCodes:codes}:{})};
  });
- return log({...db,inventory:[...products,...db.inventory]},by,'Pending Stock products submitted',`${products.length} products · ${products.map(p=>`${p.barcode} (${p.branch})`).join(', ')} · Awaiting price configuration`);
+ return log({...db,inventory:[...products,...db.inventory]},by,'Pending Stock products submitted',`${products.length} products · ${products.map(p=>`${p.barcode} (${p.branch})`).join(', ')} · Awaiting cost configuration`);
 }
 
-/** Set prices and POST initially verified stock in one auditable operation per product. */
-export function configurePendingProductPrices(db:Database,updates:ProductPriceUpdate[],by:string):Database {
+/** Configure actual COGS unit cost and post verified initial stock; NO fixed selling price is saved. */
+export function configurePendingProductCosts(db:Database,updates:ProductCostUpdate[],by:string):Database {
  requireAdmin(db,by);
  if(!updates.length)throw new Error('Select at least one Pending Stock product.');
  let next=db;
  const seen=new Set<string>();
  for(const item of updates){
-  if(seen.has(item.productId))throw new Error('Repeated product pricing entry.');
+  if(seen.has(item.productId))throw new Error('Repeated product cost entry.');
   seen.add(item.productId);
   const product=next.inventory.find(p=>p.id===item.productId&&!p.archivedAt);
-  if(!product||!needsPriceConfiguration(product))throw new Error('Product is not awaiting price configuration.');
-  if(!Number.isFinite(item.unitCost)||item.unitCost<=0||!Number.isFinite(item.sellPrice)||item.sellPrice<0)throw new Error(`Enter valid Unit Cost and Selling Price for ${product.name}. Selling Price can be zero for internal-use supplies.`);
+  if(!product||!needsCostConfiguration(product))throw new Error('Product is not awaiting cost configuration.');
+  if(!Number.isFinite(item.unitCost)||item.unitCost<=0)throw new Error(`Enter a valid positive Unit Cost for ${product.name}.`);
   const qty=product.pendingInitialQty||0;
   const codes=product.pendingUnitCodes||[];
   if(!Number.isInteger(qty)||qty<1)throw new Error('Pending verified quantity is missing. Please investigate.');
   if(product.trackingMode==='serialized'&&codes.length!==qty)throw new Error('Pending serial unit codes do not match the receiving count.');
   const at=new Date().toISOString();
-  const movement:StockMovement={id:uid(),productId:product.id,branch:product.branch,kind:'StockIn',qty,unitCost:item.unitCost,by,at,notes:'Admin confirmed initial physical stock and configured product prices',...(product.trackingMode==='serialized'?{unitCodes:[...codes]}:{})};
-  next=log({...next,inventory:next.inventory.map(p=>p.id===product.id?{...p,unitCost:item.unitCost,sellPrice:item.sellPrice,priceConfigured:true,pendingInitialQty:0,pendingUnitCodes:undefined,updatedAt:at,updatedBy:by}:p),stockMovements:[movement,...next.stockMovements]},by,'Price Configuration completed & initial Stock In posted',`${product.barcode} · ${product.name} · ${qty} ${product.unit} · ${product.branch} · Cost ${item.unitCost} · Selling ${item.sellPrice}`);
+  const movement:StockMovement={id:uid(),productId:product.id,branch:product.branch,kind:'StockIn',qty,unitCost:item.unitCost,by,at,notes:'Admin confirmed initial physical stock and configured actual unit cost',...(product.trackingMode==='serialized'?{unitCodes:[...codes]}:{})};
+  next=log({...next,inventory:next.inventory.map(p=>p.id===product.id?{...p,unitCost:item.unitCost,priceConfigured:true,pendingInitialQty:0,pendingUnitCodes:undefined,updatedAt:at,updatedBy:by}:p),stockMovements:[movement,...next.stockMovements]},by,'Cost Configuration completed & initial Stock In posted',`${product.barcode} · ${product.name} · ${qty} ${product.unit} · ${product.branch} · Unit COGS ${item.unitCost}`);
  }
  return next;
 }
+
+/** Compatibility for older imports; now configures COGS only. */
+export const configurePendingProductPrices=configurePendingProductCosts;
 
 function requireAdmin(db:Database,by:string):User {
  const actor=db.users.find(u=>u.id===by&&u.active);
@@ -237,9 +243,9 @@ function requireAdmin(db:Database,by:string):User {
 function cleanProductDetails(input:ProductDetails):ProductDetails {
  const barcode=input.barcode.toUpperCase().replace(/[^A-Z0-9]/g,'');
  const name=input.name.trim(),unit=input.unit.trim()||'Piece';
- if(!barcode||!name||!Number.isFinite(input.unitCost)||input.unitCost<=0||!Number.isFinite(input.sellPrice)||input.sellPrice<0||!Number.isInteger(input.reorderAt)||input.reorderAt<0)throw new Error('Valid barcode, product name, prices and alert quantity are required.');
+ if(!barcode||!name||!Number.isFinite(input.unitCost)||input.unitCost<=0||!Number.isInteger(input.reorderAt)||input.reorderAt<0)throw new Error('Valid barcode, product name, positive unit cost, and alert quantity are required.');
  if(!['Automotive Parts & Products','Shop Supplies'].includes(input.category))throw new Error('Invalid product category.');
- return {barcode,name,unit,category:input.category,unitCost:input.unitCost,sellPrice:input.sellPrice,reorderAt:input.reorderAt,trackingMode:input.trackingMode||'quantity'};
+ return {barcode,name,unit,category:input.category,unitCost:input.unitCost,reorderAt:input.reorderAt,trackingMode:input.trackingMode||'quantity'};
 }
 export function registerInventoryProduct(db:Database,input:NewInventoryProduct,by:string):Database {
  requireAdmin(db,by);
@@ -286,7 +292,7 @@ export function updateInventoryProduct(db:Database,productId:string,input:Produc
  if((old.trackingMode||'quantity')!==(input.trackingMode||'quantity')&&(db.stockMovements.some(m=>m.productId===old.id)||(db.stockReceipts||[]).some(r=>r.lines.some(l=>l.productId===old.id))))throw new Error('Tracking mode is locked after the first inventory movement or receipt.');
  const details=cleanProductDetails(input);
  if(db.inventory.some(p=>p.id!==productId&&p.branch===old.branch&&p.barcode===details.barcode))throw new Error('Barcode already registered in this branch.');
- const fields:(keyof ProductDetails)[]=['barcode','name','category','unit','unitCost','sellPrice','reorderAt','trackingMode'];
+ const fields:(keyof ProductDetails)[]=['barcode','name','category','unit','unitCost','reorderAt','trackingMode'];
  const changes=fields.filter(f=>old[f]!==details[f]).map(f=>`${f}: ${old[f]} → ${details[f]}`);
  if(!changes.length)return db;
  const next={...db,inventory:db.inventory.map(p=>p.id===productId?{...p,...details,updatedAt:new Date().toISOString(),updatedBy:by}:p)};
@@ -368,7 +374,7 @@ export function confirmStockOutBatch(db:Database,posId:string,lines:StockReceipt
 export function confirmStockOut(db:Database,productId:string,posId:string,qty:number,by:string,unitCodes?:string[]):Database {
  const product=db.inventory.find(p=>p.id===productId),pos=db.pos.find(p=>p.id===posId),actor=db.users.find(u=>u.id===by&&u.active);
  if(!actor||actor.role!=='cashier'||!product||product.archivedAt||!pos||actor.branch!==pos.branch||product.branch!==pos.branch||pos.status!=='Pending')throw new Error('Stock Out requires an open POS and authorized Cashier in the same branch.');
- if(needsPriceConfiguration(product))throw new Error('Product needs Admin Price Configuration before POS consumption.');
+ if(needsPriceConfiguration(product))throw new Error('Product needs Admin Cost Configuration before POS consumption.');
  if(!Number.isInteger(qty)||qty<=0||stockAvailable(db,product)<qty)throw new Error('Insufficient stock or invalid quantity.');
  const codes=(unitCodes||[]).map(normUnitCode).filter(Boolean);
  if(product.trackingMode==='serialized'){const live=verifiedUnitCodes(db,product.id);if(codes.length!==qty||new Set(codes).size!==qty||!codes.every(c=>live.has(c)))throw new Error('Scan unique, available unit barcodes for every serialized item.');}

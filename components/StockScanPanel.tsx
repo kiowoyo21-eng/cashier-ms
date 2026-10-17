@@ -14,7 +14,7 @@ export default function StockScanPanel({db,branch,mode,onSubmit,onClose,fixedPOS
  const matches=scan.trim()?stock.filter(p=>p.barcode.toUpperCase()===clean(scan)||p.name.toLowerCase().includes(scan.toLowerCase())).slice(0,8):[];
  const activePOS=db.pos.filter(p=>p.branch===branch&&p.status==='Pending'&&p.plate===clean(plate));
  const add=(code:string)=>{const raw=clean(code),product=stock.find(p=>p.barcode.toUpperCase()===raw);setScan('');if(!product){setMessage(`Barcode ${raw||'(empty)'} is not registered for this branch. Ask Admin to register it.`);scanner.current?.focus();return;}
-  if(needsPriceConfiguration(product)){setMessage(`${product.name} is Pending Stock / Needs Pricing. Ask Admin to configure its cost and selling price first.`);scanner.current?.focus();return;}
+  if(needsPriceConfiguration(product)){setMessage(`${product.name} is Pending Stock / Needs Cost. Ask Admin to configure its unit COGS first.`);scanner.current?.focus();return;}
   if(rows.some(r=>r.productId===product.id)){setMessage(`${product.name} already in the list. Edit its physical quantity; repeat scan ignored.`);scanner.current?.focus();return;}
   setRows(current=>[...current,{key:product.id,productId:product.id,qty:1,serialText:'',multiple:false}]);setMessage(`${product.name} added. Continue scanning other items.`);scanner.current?.focus();};
  const update=(id:string,values:Partial<DraftLine>)=>setRows(current=>current.map(r=>r.productId===id?{...r,...values}:r));

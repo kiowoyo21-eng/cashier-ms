@@ -46,17 +46,17 @@ export default function BulkScanRegistration({db,initialBranch,onSave,onClose}:{
   ev.preventDefault();
   if(!rows.length){setMessage('No new barcodes have been scanned yet.');return;}
   if(rows.some(r=>!r.name.trim()||!r.unit.trim()||Number(r.initialQty)<0||!Number.isInteger(Number(r.initialQty))||Number(r.reorderAt)<0||!Number.isInteger(Number(r.reorderAt)))){
-   setMessage('Enter a name for every scanned product and confirm physical quantities. Prices come after Submit All.');return;
+   setMessage('Enter a name for every scanned product and confirm physical quantities. Actual unit cost comes after Submit All.');return;
   }
   if(rows.some(r=>r.multiple&&Number(r.initialQty)<2)){setMessage('Multiple-unit products need a physically counted quantity of 2 or more.');return;}
   if(!window.confirm(`Have you physically checked the stock quantities for all ${rows.length} products in ${branch}?\n\nEach product starts with 1 unit unless you checked Multiple. Products will appear under Pending Stock. Prices are configured on the next screen, before inventory is available to use.`))return;
   const payload:PendingInventoryRegistration[]=rows.map(r=>({branch,barcode:r.barcode,name:r.name.trim(),category:r.category,unit:r.unit.trim(),initialQty:r.multiple?Number(r.initialQty):1,reorderAt:Number(r.reorderAt),trackingMode:r.trackingMode,...(r.trackingMode==='serialized'?{initialUnitCodes:r.serialText.split(/[\s,;]+/).map(clean).filter(Boolean)}:{})}));
   if(onSave(payload)){
-   setMessage(`Submitted ${payload.length} products to Pending Stock. Next: Price Configuration.`);setRows([]);seen.current.clear();setBarcodeInput('');setCamera(false);
+   setMessage(`Submitted ${payload.length} products to Pending Stock. Next: Cost Configuration.`);setRows([]);seen.current.clear();setBarcodeInput('');setCamera(false);
   }
  };
  return <section className="bulk-scan-panel" aria-label="Bulk Scan product registration">
-  <div className="bulk-scan-header"><div><h3><ScanBarcode size={19}/> Bulk Scan</h3><p>Admin only · Scan unique barcodes, enter each product name, then Submit All. Prices are configured afterward.</p></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close Bulk Scan"><X size={18}/></button></div>
+  <div className="bulk-scan-header"><div><h3><ScanBarcode size={19}/> Bulk Scan</h3><p>Admin only · Scan unique barcodes, enter each product name, then Submit All. Actual unit costs are configured afterward.</p></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close Bulk Scan"><X size={18}/></button></div>
   <form onSubmit={submit}>
    <div className="bulk-scan-controls"><label className="field"><span>Receiving Branch</span><select value={branch} onChange={e=>changeBranch(e.target.value as BranchId)}>{BRANCHES.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
     <label className="field"><span>Scan / Enter Barcode</span><input ref={scanner} value={barcodeInput} onChange={e=>setBarcodeInput(clean(e.target.value))} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();add(barcodeInput)}}} placeholder="Scan then press Enter" aria-label="Bulk scan barcode" autoComplete="off"/></label>
