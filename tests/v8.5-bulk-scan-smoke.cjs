@@ -23,7 +23,7 @@ const cam=fs.readFileSync(path.join(root,'components/BarcodeCamera.tsx'),'utf8')
 assert(page.includes('user.role===\'admin\'&&showBulkScan&&<BulkScanRegistration'));
 assert(page.includes('Bulk Scan</button>'));
 assert(panel.includes('seen.current.has(code)')&&panel.includes('Duplicate scan ignored'));
-assert(panel.includes('Register All ('));
+assert(panel.includes('Submit All ('));
 assert(panel.includes('onKeyDown={e=>{if(e.key===\'Enter\')'));
 assert(cam.includes('continuous=false')&&cam.includes('if(!seen.has(code))'));
 console.log('PASS v8.5: Admin Bulk Scan registration, no default samples, atomic saving, branch separation, duplicate prevention, camera continuous mode and scan field action.');

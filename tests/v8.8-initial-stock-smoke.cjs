@@ -1,0 +1,31 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');const path=require('node:path');const ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript');const vm=require('node:vm');
+const root=path.resolve(__dirname,'..');
+function moduleFrom(file){const src=fs.readFileSync(path.join(root,file),'utf8');const compiled=ts.transpileModule(src,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}});const m={exports:{}};vm.runInNewContext(compiled.outputText,{module:m,exports:m.exports,require,crypto:globalThis.crypto||require('node:crypto').webcrypto,Intl,Date,console,localStorage:{getItem:()=>null,setItem:()=>{}}});return m.exports;}
+const d=moduleFrom('lib/data.ts');let db=d.createSeed();const admin=db.users.find(u=>u.role==='admin'),cashier=db.users.find(u=>u.role==='cashier');assert(admin&&cashier);
+const init={branch:cashier.branch,barcode:'V880001',name:'Actual Oil Bottle',category:'Automotive Parts & Products',unit:'Bottle',unitCost:200,sellPrice:350,reorderAt:2,trackingMode:'quantity'};
+db=d.registerInventoryProduct(db,{...init,initialQty:1},admin.id);
+const oil=db.inventory.find(p=>p.barcode==='V880001');assert.equal(d.stockAvailable(db,oil),1,'admin single add immediately available');
+const movement=db.stockMovements.find(m=>m.productId===oil.id);assert.equal(movement.qty,1);assert.equal(movement.kind,'StockIn');assert.equal(movement.by,admin.id);
+db=d.registerInventoryProduct(db,{...init,barcode:'V880002',initialQty:4},admin.id);
+const multi=db.inventory.find(p=>p.barcode==='V880002');assert.equal(d.stockAvailable(db,multi),4,'multiple count explicitly provided');
+assert.equal(d.stockAvailable(db,oil),1,'multi product cannot alter first item');
+assert.throws(()=>d.registerInventoryProduct(db,{...init,barcode:'V880003',trackingMode:'serialized',initialQty:2,initialUnitCodes:['X1','X1']},admin.id),/distinct/);
+db=d.registerInventoryProduct(db,{...init,barcode:'V880003',trackingMode:'serialized',initialQty:2,initialUnitCodes:['X1','X2']},admin.id);
+const serialized=db.inventory.find(p=>p.barcode==='V880003');assert.equal(d.stockAvailable(db,serialized),2);assert.equal(db.stockMovements.find(m=>m.productId===serialized.id).unitCodes.length,2);
+assert.throws(()=>d.registerInventoryProduct(db,{...init,barcode:'V880004',trackingMode:'serialized',initialQty:1,initialUnitCodes:['X1']},admin.id),/assigned/);
+const startingOther=db.inventory.filter(p=>p.id!==oil.id).map(p=>[p.id,d.stockAvailable(db,p)]);
+const proof={name:'delivery.jpg',data:'data:image/jpeg;base64,VEVTVA=='};
+db=d.submitStockReceipt(db,[{productId:oil.id,qty:3}],'REF88','Admin verified physical 3',''+admin.id,proof);
+assert.equal(d.stockAvailable(db,oil),4,'admin verified Stock In available');
+db=d.submitStockReceipt(db,[{productId:oil.id,qty:2}],'REF89','Cashier received',''+cashier.id,proof);
+assert.equal(d.stockAvailable(db,oil),4,'cashier pending receipt not available');
+const pending=db.stockReceipts.find(r=>r.reference==='REF89');assert.equal(pending.status,'Pending');
+db=d.reviewStockReceipt(db,pending.id,true,admin.id,true,'Independently counted and checked');assert.equal(d.stockAvailable(db,oil),6);
+const result=d.assignConsumedStockToPOS(db,cashier.branch,'214UWI',[{productId:oil.id,qty:1}],cashier.id);
+assert.equal(result.created,true);assert.equal(result.pos.status,'Pending');assert.equal(d.stockAvailable(result.db,oil),5);
+for(const [id,count] of startingOther){assert.equal(d.stockAvailable(result.db,result.db.inventory.find(x=>x.id===id)),count,'other product unchanged');}
+const scan=fs.readFileSync(path.join(root,'components/StockScanPanel.tsx'),'utf8');assert(scan.includes('Multiple units'));assert(scan.includes("multiple:false"));assert(scan.includes("mode==='receive'&&!proof"));
+const bulk=fs.readFileSync(path.join(root,'components/BulkScanRegistration.tsx'),'utf8');assert(bulk.includes("initialQty:'1'"));assert(bulk.includes('Multiple units?'));assert(bulk.includes('initialQty:r.multiple?Number(r.initialQty):1'));
+const app=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');assert(app.includes('setNewProductMultiple(false)'));assert(app.includes('Multiple units physically received'));assert(!app.includes('initialQty:0},user.id'));assert(app.includes('setPosTab(\'drafts\')'));
+console.log('PASS v8.8: Admin register one unit by default, explicit multiple, serialized codes, receiving approval, posted stock usable by Cashier POS Draft, per-branch ledger and scanner controls.');
