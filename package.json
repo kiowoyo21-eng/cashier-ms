@@ -1,17 +1,18 @@
 {
   "name": "underchargers-fund-management-pwa",
-  "version": "7.0.0",
+  "version": "8.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:logic": "node tests/logic-smoke.cjs && node tests/revisions-smoke.cjs && node tests/v3-print-fixtures.cjs && node tests/v4-disbursement-smoke.cjs && node tests/v5-revisions-smoke.cjs && node tests/v6-automatic-link-smoke.cjs && node tests/v7-branch-approvals-smoke.cjs && node tests/v7-print-fixtures.cjs",
+    "test:logic": "node tests/logic-smoke.cjs && node tests/revisions-smoke.cjs && node tests/v3-print-fixtures.cjs && node tests/v4-disbursement-smoke.cjs && node tests/v5-revisions-smoke.cjs && node tests/v6-automatic-link-smoke.cjs && node tests/v7-branch-approvals-smoke.cjs && node tests/v7-print-fixtures.cjs && node tests/v8-stock-out-smoke.cjs",
     "test:reports": "node tests/v3-print-fixtures.cjs",
     "test:disbursement": "node tests/v4-disbursement-smoke.cjs && node tests/v3-print-fixtures.cjs",
     "test:v5": "node tests/v5-revisions-smoke.cjs",
-    "test:v6": "node tests/v6-automatic-link-smoke.cjs && node tests/v7-branch-approvals-smoke.cjs && node tests/v7-print-fixtures.cjs"
+    "test:v6": "node tests/v6-automatic-link-smoke.cjs && node tests/v7-branch-approvals-smoke.cjs && node tests/v7-print-fixtures.cjs",
+    "test:inventory": "node tests/v8-stock-out-smoke.cjs"
   },
   "dependencies": {
     "next": "^15.5.0",

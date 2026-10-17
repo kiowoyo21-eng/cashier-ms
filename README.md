@@ -1,3 +1,7 @@
+# Underchargers Fund Management System — v8 Frontend
+
+> **Important:** v8 adds browser-local barcode inventory, locked Stock Out with Admin-reviewed return requests, and split POS Draft COGS. Production Supabase security is not yet connected. [Read V8 status](REVISION_STATUS_V8.md).
+
 # Version 7 Update — Separate Branch Revolving Funds & Disbursement Sign-off
 
 See [REVISION_STATUS_V7.md](REVISION_STATUS_V7.md) for approved rules, changes, print testing and integration limitations. The Cashier prepares its own branch RF replenishment and PB prepares its own branch RFP replenishment. Each of four branches has independent cash balances and the Admin report shows four per-branch totals. Prepared by / Verified by Accounting / Approved by President form the intended signatory workflow; browser-local approvals are explicitly simulated until both applications share Supabase.
@@ -89,7 +93,7 @@ Use the login page account shortcut buttons to fill credentials. These are **ins
 
 ## Working frontend features
 
-**Cashier:** Dashboard; POS quotations → add services/parts/COGS → multi-method payment → close; additional linked POS transaction for completed sales; read-only completed Sales; Revolving Fund expense with auto transaction numbers, VAT/Non-VAT, payee, voucher, receipt number, TIN, category, description, notes, receipt upload, signature pad; immediate RF deduction while Pending; replenishment request (balance credited only after Admin approval); Opening/Closing cash counts; 9 AM late-opening mandatory report; 4 PM closing alert; following-login missed-closing report; discrepancies; mandatory report lock; Friday Sales-only turnover; CSV/printable reports.
+**Cashier:** Dashboard; POS quotations → add services/parts/COGS → multi-method payment → close; additional linked POS transaction for completed sales; read-only completed Sales; Revolving Fund expense with auto transaction numbers, VAT/Non-VAT, payee, voucher, receipt number, TIN, category, description, notes, receipt upload, signature pad; immediate RF deduction while Pending; replenishment request (balance credited only after Admin approval); Opening/Closing cash counts; 9 AM late-opening mandatory report; 4 PM closing alert; following-login missed-closing report; discrepancies; mandatory report lock; daily Sales-only turnover; CSV/printable reports.
 
 **PB:** Parts-only RFP purchases with a plate per part entry, quantity/unit cost/receipt; one-time match to a POS in the same branch with exactly matching normalized plate; replenishment requests; edit requests and branch change requests, subject to Admin review; RFP and POS reference reports. No RF expense creation or POS edits.
 

@@ -66,3 +66,22 @@
 .wizard-pos .section-title{margin:15px 0}.wizard-pos>.modal-actions{margin-top:18px}
 @media(max-width:820px){.purchase-line-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.pos-stepper>div{font-size:9px;line-height:1.45;padding:9px 4px}.purchase-line{padding:10px}.purchase-line-fields{gap:8px}.purchase-line-fields .field{min-width:0}.purchase-line-fields .field input{width:100%}.purchase-section-top{align-items:flex-start}.wizard-pos .form-grid{grid-template-columns:1fr}.plate-suggestion-list{max-height:155px}}
+
+/* V8: compact branch inventory, locked Stock Out, and separate POS COGS sources */
+.stock-out-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:16px 0 9px;border-top:1px solid #eaedf1;padding-top:14px}
+.stock-out-header .section-title{margin:0 0 5px}.stock-out-header p{margin:0;max-width:650px}
+.inventory-cogs-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 18px}
+.inventory-cogs-totals>div{display:flex;flex-direction:column;gap:5px;background:#f7f8fa;border:1px solid #e7e9ee;border-radius:8px;padding:11px;min-width:0}
+.inventory-cogs-totals span{font-size:10px;color:#737780}.inventory-cogs-totals strong{font-size:14px;word-break:break-word;font-variant-numeric:tabular-nums}
+.inventory-cogs-totals .cogs-total{background:#fff2c2;border-color:#f1d874}
+.scan-field{display:flex;align-items:center;gap:10px}.scan-field>.field{flex:1;min-width:0}.scan-field svg{color:#b38908}
+.scan-suggestions{border:1px solid #e7e8eb;border-radius:9px;max-height:200px;overflow-y:auto;background:white}
+.scan-suggestions button{display:flex;width:100%;align-items:flex-start;text-align:left;flex-direction:column;gap:4px;border:0;background:white;border-bottom:1px solid #eff0f2;padding:10px 12px}
+.scan-suggestions button:hover{background:#fff8db}.scan-suggestions small{font-size:10px;color:#666}
+.stock-confirm-card{display:flex;flex-direction:column;gap:5px;border:1px solid #eed27a;background:#fff9e7;padding:12px;border-radius:8px}
+.stock-confirm-card span{font-size:11px;color:#646974}
+.payment-row>.button{flex:0 0 auto;margin-left:auto}
+@media(max-width:900px){.inventory-cogs-totals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.inventory-cogs-totals{grid-template-columns:1fr 1fr}.inventory-cogs-totals strong{font-size:12px}.stock-out-header .button{width:100%}.scan-field{align-items:flex-start;flex-direction:column}.scan-field>.field{width:100%}}
+
+.barcode-camera{border:1px solid #ede0a9;border-radius:9px;padding:10px;background:#fffbef}.barcode-camera-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.barcode-camera-top strong{display:flex;gap:6px;align-items:center}.barcode-camera video{display:block;width:100%;max-height:260px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:#222}.barcode-camera p{margin:8px 0 0}

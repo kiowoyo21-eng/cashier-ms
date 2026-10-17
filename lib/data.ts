@@ -42,6 +42,11 @@ export interface FundEntry {
   accountingStatus?:'Pending'|'Verified'|'Returned';presidentStatus?:'Pending'|'Approved'|'Rejected';
   accountingBy?:string;accountingAt?:string;presidentBy?:string;presidentAt?:string;receivedAt?:string;
 }
+export type InventoryCategory = 'Automotive Parts & Products'|'Shop Supplies';
+export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;sellPrice:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;}
+/** Append-only movement ledger. StockOut and StockReturn records must never be mutated. */
+export interface StockMovement {id:string;productId:string;branch:BranchId;kind:'StockIn'|'StockOut'|'StockReturn';qty:number;unitCost:number;posId?:string;sourceStockOutId?:string;by:string;at:string;notes?:string;}
+export interface StockCorrection {id:string;stockOutId:string;branch:BranchId;posId:string;qty:number;reason:string;requestedBy:string;requestedAt:string;status:'Pending'|'Approved'|'Rejected';decidedBy?:string;decidedAt?:string;decisionNotes?:string;}
 export interface POSLine {id:string;type:'Service'|'Part';name:string;qty:number;price:number;cost:number;supplier?:string;receiptNo?:string;proof?:Receipt;}
 export interface POSPayment {id:string;mode:'Cash'|'GCash'|'Bank Transfer'|'Card';amount:number;date:string;}
 export interface POS {id:string;no:string;branch:BranchId;date:string;client:string;phone:string;vehicle:string;plate:string;concern:string;items:POSLine[];payments:POSPayment[];status:'Pending'|'Closed';parentId?:string;createdBy:string;createdAt:string;closedAt?:string;}
@@ -51,7 +56,7 @@ export interface Turnover {id:string;branch:BranchId;date:string;amount:number;n
 export interface ChangeRequest {id:string;type:'Edit RFP'|'Change Branch';entryId:string;branch:BranchId;requestedBy:string;changes:Partial<FundEntry>;original?:Partial<FundEntry>;reason:string;status:'Pending'|'Approved'|'Rejected';createdAt:string;decidedBy?:string;}
 export interface Audit {id:string;at:string;by:string;action:string;detail:string;}
 export interface Database {
-  users:User[];fundEntries:FundEntry[];pos:POS[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
+  users:User[];fundEntries:FundEntry[];pos:POS[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
   settings:{rfBase:Record<BranchId,number>;rfpBase:Record<BranchId,number>;categories:string[];signatories?:{checked:string;approved:string};reportLogo?:Receipt};
 }
 export const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ID-${Date.now()}-${Math.random().toString(36).slice(2,7)}`);
@@ -75,10 +80,15 @@ export function createSeed():Database {
   const rf2 = entry('UCQC-Rotating Fund-00000001','UCQC',680,'Office Mart','Office Supplies','u-admin','RF');
   const rfp = entry('UCM-RFP-00000001','UCM',3800,'Auto Parts Supplier','Automotive Parts','u-pb','RFP');rfp.plate='ABC1234';rfp.car='Toyota Vios 2020';rfp.quantity=2;rfp.unitCost=1900;
   const pos:POS[]=[{id:uid(),no:'UCM-POS-00000001',branch:'UCM',date,client:'Sample Customer',phone:'',vehicle:'Toyota Vios 2020',plate:'ABC1234',concern:'Routine service',items:[{id:uid(),type:'Service',name:'Oil Change',qty:1,price:1800,cost:450},{id:uid(),type:'Part',name:'Engine Oil',qty:1,price:2200,cost:1250}],payments:[{id:uid(),mode:'Cash',amount:4000,date}],status:'Closed',createdBy:'u-cashier',createdAt:new Date().toISOString(),closedAt:new Date().toISOString()}];
-  return {users,fundEntries:[rf,rf2,rfp],pos,counts:[],incidents:[],turnovers:[],requests:[],audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Demo initialized',detail:'Sample data created; amounts are illustrative only'}],settings:{rfBase:base(),rfpBase:rfpBase(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
+  const inventory:InventoryProduct[]=BRANCHES.flatMap(b=>[
+    {id:uid(),barcode:`${b.id}10001`,name:'Engine Oil 5W-30',category:'Automotive Parts & Products' as const,branch:b.id,unit:'Bottle',sellPrice:780,unitCost:440,openingQty:24,reorderAt:5,createdAt:new Date().toISOString()},
+    {id:uid(),barcode:`${b.id}10002`,name:'Oil Filter',category:'Automotive Parts & Products' as const,branch:b.id,unit:'Piece',sellPrice:550,unitCost:310,openingQty:12,reorderAt:4,createdAt:new Date().toISOString()},
+    {id:uid(),barcode:`${b.id}10003`,name:'Cleaning Detergent',category:'Shop Supplies' as const,branch:b.id,unit:'Bottle',sellPrice:0,unitCost:160,openingQty:15,reorderAt:3,createdAt:new Date().toISOString()},
+  ]);
+  return {users,fundEntries:[rf,rf2,rfp],pos,inventory,stockMovements:[],stockRequests:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Demo initialized',detail:'Sample data created; amounts are illustrative only'}],settings:{rfBase:base(),rfpBase:rfpBase(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
 }
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
-export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));return d;}}}catch{}return createSeed();}
+export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];return d;}}}catch{}return createSeed();}
 export function storeDB(db:Database):boolean {try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));return true;}catch{return false;}}
 export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
@@ -111,26 +121,84 @@ export function nextNumber(db:Database,branch:BranchId,type:'RF'|'RFP'|'POS'):st
 export function log(db:Database,by:string,action:string,detail:string):Database {return {...db,audit:[{id:uid(),at:new Date().toISOString(),by,action,detail},...db.audit].slice(0,1000)};}
 export const posTotal=(p:POS)=>p.items.reduce((v,i)=>v+i.qty*i.price,0);
 export const paidTotal=(p:POS)=>p.payments.reduce((v,i)=>v+i.amount,0);
-/** COGS uses each linked PB part purchase once. Matching product quantities replace manual POS costs,
- * including partial matches and multiple PB suppliers/lines for one product. */
+/** Branch-aware stock quantity from initial count and immutable ledger. */
+export function stockAvailable(db:Database,p:InventoryProduct):number {
+ return Math.round((p.openingQty+(db.stockMovements||[]).filter(m=>m.productId===p.id&&m.branch===p.branch).reduce((n,m)=>n+(m.kind==='StockOut'?-m.qty:m.qty),0))*1000)/1000;
+}
+export function postedStockOuts(db:Database,posId:string):StockMovement[]{
+ return (db.stockMovements||[]).filter(m=>m.posId===posId&&m.kind==='StockOut');
+}
+export function returnableQty(db:Database,stockOutId:string):number {
+ const out=(db.stockMovements||[]).find(m=>m.id===stockOutId&&m.kind==='StockOut');
+ if(!out)return 0;
+ const returned=(db.stockMovements||[]).filter(m=>m.kind==='StockReturn'&&m.sourceStockOutId===stockOutId).reduce((n,m)=>n+m.qty,0);
+ return Math.max(0,out.qty-returned);
+}
+export function pendingReturnQty(db:Database,stockOutId:string):number {
+ return (db.stockRequests||[]).filter(r=>r.stockOutId===stockOutId&&r.status==='Pending').reduce((n,r)=>n+r.qty,0);
+}
+/** Pure, checked ledger operations make duplicate scans and unauthorized stock changes testable. */
+export function recordStockIn(db:Database,productId:string,qty:number,by:string,notes=''):Database {
+ const product=db.inventory.find(p=>p.id===productId);
+ if(!product||!Number.isInteger(qty)||qty<=0)throw new Error('Invalid product or positive quantity required.');
+ const actor=db.users.find(u=>u.id===by&&u.active);
+ if(!actor||(actor.role!=='admin'&&(actor.role!=='cashier'||actor.branch!==product.branch)))throw new Error('No Stock In access to this branch.');
+ const movement:StockMovement={id:uid(),productId,branch:product.branch,kind:'StockIn',qty,unitCost:product.unitCost,by,at:new Date().toISOString(),notes};
+ return log({...db,stockMovements:[movement,...db.stockMovements]},by,'Stock In',`${product.name} · ${product.branch} · +${qty}`);
+}
+export function confirmStockOut(db:Database,productId:string,posId:string,qty:number,by:string):Database {
+ const product=db.inventory.find(p=>p.id===productId),pos=db.pos.find(p=>p.id===posId),actor=db.users.find(u=>u.id===by&&u.active);
+ if(!actor||actor.role!=='cashier'||!product||!pos||actor.branch!==pos.branch||product.branch!==pos.branch||pos.status!=='Pending')throw new Error('Stock Out requires an open POS and authorized Cashier in the same branch.');
+ if(!Number.isInteger(qty)||qty<=0||stockAvailable(db,product)<qty)throw new Error('Insufficient stock or invalid quantity.');
+ const movement:StockMovement={id:uid(),productId,branch:product.branch,kind:'StockOut',qty,unitCost:product.unitCost,posId,by,at:new Date().toISOString()};
+ return log({...db,stockMovements:[movement,...db.stockMovements]},by,'Locked Stock Out',`${product.name} · ${pos.no} · -${qty} · ${pesos(qty*product.unitCost)}`);
+}
+export function requestStockReturn(db:Database,stockOutId:string,qty:number,reason:string,by:string):Database {
+ const out=db.stockMovements.find(m=>m.id===stockOutId&&m.kind==='StockOut'),actor=db.users.find(u=>u.id===by&&u.active);
+ if(!out||!out.posId||!actor||actor.role!=='cashier'||actor.branch!==out.branch)throw new Error('Unauthorized stock return.');
+ const available=returnableQty(db,stockOutId)-pendingReturnQty(db,stockOutId);
+ if(!Number.isInteger(qty)||qty<=0||qty>available||!reason.trim())throw new Error('Invalid return quantity or missing reason.');
+ const request:StockCorrection={id:uid(),stockOutId,branch:out.branch,posId:out.posId,qty,reason:reason.trim(),requestedBy:by,requestedAt:new Date().toISOString(),status:'Pending'};
+ return log({...db,stockRequests:[request,...db.stockRequests]},by,'Stock Out return requested',`${out.id} · ${qty} · ${reason}`);
+}
+export function decideStockReturn(db:Database,requestId:string,approve:boolean,by:string,notes=''):Database {
+ const req=db.stockRequests.find(r=>r.id===requestId),actor=db.users.find(u=>u.id===by&&u.active);
+ if(!req||req.status!=='Pending'||!actor||actor.role!=='admin')throw new Error('Only Admin can decide a pending return.');
+ if(approve&&req.qty>returnableQty(db,req.stockOutId))throw new Error('Return exceeds remaining Stock Out quantity.');
+ const original=db.stockMovements.find(m=>m.id===req.stockOutId)!;
+ const movement:StockMovement={id:uid(),productId:original.productId,branch:original.branch,kind:'StockReturn',qty:req.qty,unitCost:original.unitCost,sourceStockOutId:original.id,posId:original.posId,by,at:new Date().toISOString(),notes:`Approved request ${req.id}: ${req.reason}`};
+ const stockRequests=db.stockRequests.map(r=>r.id===requestId?{...r,status:approve?'Approved' as const:'Rejected' as const,decidedBy:by,decidedAt:new Date().toISOString(),decisionNotes:notes}:r);
+ return log({...db,stockRequests,stockMovements:approve?[movement,...db.stockMovements]:db.stockMovements},by,approve?'Stock return approved':'Stock return rejected',`${req.stockOutId} · ${req.qty} · ${notes}`);
+}
+/** Keep cost sources separate: POS/manual, branch inventory used, and PB/RFP purchases.
+ * PB and inventory quantities remove matching manual cost so identical parts never double count. */
 export function posCostBreakdown(p:POS,db?:Database){
- const lines=p.items.map(i=>({id:i.id,description:i.name,source:'POS entry',amount:i.qty*i.cost}));
+ const lines=p.items.map(i=>({id:i.id,description:i.name,source:'POS / Manual COGS',amount:i.qty*i.cost}));
  if(!db)return lines;
- const linked=db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&e.linkedPosId===p.id);
  const key=(s:string)=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
  const remaining=new Map(p.items.filter(i=>i.type==='Part').map(i=>[i.id,i.qty]));
- for(const part of linked){
-  let qtyLeft=part.quantity||1;const unit=part.amount/qtyLeft;
+ function absorb(description:string,qty:number){
+  let left=qty;
   for(const manual of p.items){
-   if(manual.type!=='Part'||key(manual.name)!==key(part.description)||qtyLeft<=0)continue;
-   const available=remaining.get(manual.id)||0;if(!available)continue;
-   const allocated=Math.min(available,qtyLeft),row=lines.find(x=>x.id===manual.id);
-   if(row){row.amount=Math.round((row.amount-allocated*manual.cost+allocated*unit)*100)/100;row.source=row.source==='POS entry'?`RFP linked: ${part.no} · ${part.payee}`:`${row.source}; ${part.no} · ${part.payee}`;}
-   remaining.set(manual.id,available-allocated);qtyLeft-=allocated;
+   if(manual.type!=='Part'||key(manual.name)!==key(description)||left<=0)continue;
+   const possible=Math.min(remaining.get(manual.id)||0,left);
+   if(possible){const row=lines.find(x=>x.id===manual.id);if(row)row.amount=Math.round((row.amount-possible*manual.cost)*100)/100;remaining.set(manual.id,(remaining.get(manual.id)||0)-possible);left-=possible;}
   }
-  if(qtyLeft>0)lines.push({id:part.id,description:part.description,source:`RFP linked: ${part.no} · ${part.payee}`,amount:Math.round(qtyLeft*unit*100)/100});
  }
- return lines;
+ const linked=db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&e.linkedPosId===p.id);
+ for(const part of linked){absorb(part.description,part.quantity||1);lines.push({id:part.id,description:part.description,source:`PB / RFP · ${part.no} · ${part.payee}`,amount:part.amount});}
+ for(const out of postedStockOuts(db,p.id)){
+  const product=db.inventory.find(x=>x.id===out.productId);if(!product)continue;
+  const returned=db.stockMovements.filter(m=>m.kind==='StockReturn'&&m.sourceStockOutId===out.id).reduce((n,m)=>n+m.qty,0);
+  const net=Math.max(0,out.qty-returned);if(!net)continue;
+  absorb(product.name,net);
+  lines.push({id:out.id,description:`${product.name} · ${net} ${product.unit}`,source:`From Inventory · ${out.id.slice(0,8)}`,amount:Math.round(net*out.unitCost*100)/100});
+ }
+ return lines.filter(r=>r.amount>0);
+}
+export function posCostTotals(p:POS,db:Database){
+ const rows=posCostBreakdown(p,db);
+ return {manual:rows.filter(r=>r.source==='POS / Manual COGS').reduce((n,r)=>n+r.amount,0),inventory:rows.filter(r=>r.source.startsWith('From Inventory')).reduce((n,r)=>n+r.amount,0),rfp:rows.filter(r=>r.source.startsWith('PB / RFP')).reduce((n,r)=>n+r.amount,0)};
 }
 export const posCOGS=(p:POS,db?:Database)=>posCostBreakdown(p,db).reduce((v,i)=>v+i.amount,0);
 export function posClosedDate(p:POS):string{if(!p.closedAt)return p.date;const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(p.closedAt));const val=(type:string)=>parts.find(x=>x.type===type)?.value||'';return `${val('year')}-${val('month')}-${val('day')}`;}
@@ -164,6 +232,8 @@ export function plateSuggestions(db:Database,branch:BranchId,term:string){
 }
 /** Links only unassigned PB part-lines to a new Cashier POS (not to unrelated previous visits). */
 export function linkPartsOnSale(db:Database,pos:POS):Database{
+ // Do not silently assign parts to a new visit if another open POS exists for the same plate.
+ if(db.pos.some(p=>p.id!==pos.id&&p.branch===pos.branch&&p.status==='Pending'&&normalizePlate(p.plate)===normalizePlate(pos.plate)))return db;
  const items=db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&!e.linkedPosId&&e.branch===pos.branch&&normalizePlate(e.plate||'')===normalizePlate(pos.plate));
  if(!items.length)return db;
  return {...db,fundEntries:db.fundEntries.map(e=>items.some(i=>i.id===e.id)?{...e,linkedPosId:pos.id}:e)};
