@@ -1,3 +1,22 @@
+# Underchargers Fund Management System PWA — Version 5 (Frontend Only)
+
+**Latest approved revisions (17 October 2026):**
+
+- **Friday turnover is for SALES ONLY.** Funds Turnover has been removed from user-facing workflows and printable report choices. Prior local demo history is preserved for reference.
+- **Cashier BOD:** From **8:30 AM Philippine time**, if the day's BOD has not been submitted and no mandatory incident report is outstanding, the PWA automatically directs the Cashier to the Opening Cash Count modal. The cashier must complete BOD before new entries. The **9:00 AM deadline**, missed-BOD mandatory report, **4:00 PM closing alert**, **6:00 PM closing deadline**, and next-login missed-closing incident behavior remain.
+- **Literal cash count:** Cashier inputs ONLY quantities by denomination. Total counted cash is computed automatically. No editable separate Actual Amount field and no Expected Balance / variance shown during entry. Expected and variance remain behind the scenes for audit and mandatory discrepancy reporting after submission.
+- **POS and PB vehicle:** Exactly **two vehicle entry controls** — searchable **Brand & Model** (select e.g. Toyota Vios by searching `Vios`) plus a separate **Year**. The local reference currently includes commonly used car models for frontend testing; it is not a complete automotive catalogue. The saved POS vehicle or PB parts-purchase Car is, for example, `Toyota Vios 2020`. If a POS with a single matching plate exists, the PB form automatically fills the car from that POS; for repeat visits the PB selects the exact POS. There is no separate Vehicle Master in the Cashier navigation.
+- **Reports:** **Monthly Parts Expenses** tab sits beside **Fund Transactions** and **POS & Sales**. Access is limited to PB/Admin. Monthly (current month automatically) and Custom Date Range are available. Table and printable format include Date, Part, Supplier, Plate Number, **Car**, **Branch**, Qty, Unit Cost, Total Amount, Linked POS, Receipt and Status. The report retains its RFP transaction reference number in printable form.
+- **PB Disbursement/Replenishment:** Separate printable report covering **eligible parts expenses created after the last approved disbursement request was submitted**, so items purchased while that request was awaiting approval are not skipped. There is no manual requested-fund amount. Replenishment documents put the details and summary/signatures together on the final printable sheet when space allows. Note: server-controlled completion/settlement confirmation will be required later in Supabase production.
+
+**Deployment:** Install dependencies (`npm install`), run `npm run dev`, and visit localhost:3000; import into GitHub/Vercel for review. PWA manifest and service worker retained, with responsive white-and-yellow design for mobile/tablet/desktop.
+
+**Data:** Supabase is still disconnected; data remains in existing browser `localStorage` key, so v4 demo records should persist on the same browser/origin. Back up data with Admin → Settings → JSON Export before replacing deployments, because storage can be cleared and test credentials are not secure.
+
+**Tests:** `npm run test:logic` includes the v5 logic and TSX syntax smoke tests; financial calculation and preview-HTML test fixtures pass. A full `next build`, UI end-to-end test and real PDF page-count verification for all new v5 templates are **NOT verified here** because npm registry dependency downloads were unreachable and headless printing timed out. Do not treat this as production-ready financial software.
+
+---
+
 # Version 4 — Combined Disbursement and Fund Replenishment
 
 The Disbursement form IS the request for reimbursement of spent fund money. It is **not a separate new-fund request** and there is **no user-entered request amount**. The request is automatically calculated as the difference between the authorized fund target and current cash on hand, less any already approved replenishments, with rejected expenses reversed. RF and RFP are calculated separately for each branch.
@@ -14,7 +33,7 @@ The Disbursement form IS the request for reimbursement of spent fund money. It i
 
 # Version 3 — Reports-First CMS Frontend
 
-**Latest update:** Added specialized printable A4 landscape reports, date-range ledger balances, Closed-date Sales, RFP-linked COGS, denomination cash-count sheets, separate Friday Sales/Funds Turnovers and configurable print logo/signatories. See `REVISION_STATUS_V3.md` for details and remaining limitations. **Supabase is not yet connected.**
+**Latest update:** Added specialized printable A4 landscape reports, date-range ledger balances, Closed-date Sales, RFP-linked COGS, denomination cash-count sheets, separate Friday Sales Turnover only (Funds Turnover removed) and configurable print logo/signatories. See `REVISION_STATUS_V3.md` for details and remaining limitations. **Supabase is not yet connected.**
 
 **Report previews:** Log in → Reports → choose report type → select branch (Admin must pick one) and date range → Preview Selected Report → Print / Save as PDF. To upload your official logo and signatory names, use Admin → Settings.
 
@@ -50,7 +69,7 @@ Use the login page account shortcut buttons to fill credentials. These are **ins
 
 ## Working frontend features
 
-**Cashier:** Dashboard; POS quotations → add services/parts/COGS → multi-method payment → close; additional linked POS transaction for completed sales; read-only completed Sales; Revolving Fund expense with auto transaction numbers, VAT/Non-VAT, payee, voucher, receipt number, TIN, category, description, notes, receipt upload, signature pad; immediate RF deduction while Pending; replenishment request (balance credited only after Admin approval); Opening/Closing cash counts; 9 AM late-opening mandatory report; 4 PM closing alert; following-login missed-closing report; discrepancies; mandatory report lock; Friday turnover; CSV/printable reports.
+**Cashier:** Dashboard; POS quotations → add services/parts/COGS → multi-method payment → close; additional linked POS transaction for completed sales; read-only completed Sales; Revolving Fund expense with auto transaction numbers, VAT/Non-VAT, payee, voucher, receipt number, TIN, category, description, notes, receipt upload, signature pad; immediate RF deduction while Pending; replenishment request (balance credited only after Admin approval); Opening/Closing cash counts; 9 AM late-opening mandatory report; 4 PM closing alert; following-login missed-closing report; discrepancies; mandatory report lock; Friday Sales-only turnover; CSV/printable reports.
 
 **PB:** Parts-only RFP purchases with a plate per part entry, quantity/unit cost/receipt; one-time match to a POS in the same branch with exactly matching normalized plate; replenishment requests; edit requests and branch change requests, subject to Admin review; RFP and POS reference reports. No RF expense creation or POS edits.
 

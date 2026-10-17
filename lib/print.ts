@@ -1,6 +1,6 @@
 import {
   BRANCH_NAME,categoryTotals,datePH,disbursementSummary,pesos,posCOGS,posCostBreakdown,
-  posTotal,paidTotal,posClosedDate,reportDateMatch,normalizePlate,
+  posTotal,paidTotal,posClosedDate,reportDateMatch,normalizePlate,pendingRFPDisbursementRows,
   type Audit,type BranchId,type Count,type Database,type Fund,type FundEntry,type POS,type Turnover
 } from './data';
 
@@ -139,10 +139,43 @@ export function printFundReport(db:Database,branch:BranchId,fund:Fund,_entries:F
 export function printRFPParts(db:Database,branch:BranchId,from='',to=''){
  const items=db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.branch===branch&&reportDateMatch(e.date,from,to));
  const range=period(from,to),name=BRANCH_NAME(branch);
- const rows=items.map(e=>[displayed(e.date),displayed(e.no),displayed(e.description),displayed(e.payee),displayed(e.plate),displayed(e.quantity||1),displayed(fmt(e.unitCost||0)),displayed(fmt(e.amount)),displayed(db.pos.find(p=>p.id===e.linkedPosId)?.no||'Unlinked'),displayed(e.proof?.name||'MISSING'),displayed(e.status)]);
- const detail=reportPages('RFP · PARTS EXPENSES',name,range,['Date','RFP Ref','Part','Supplier','Plate','Qty','Unit Cost','Amount','Linked POS','Receipt','Status'],rows,[8,14,13,12,8,4,8,8,11,8,6]);
+ const rows=items.map(e=>{const linked=db.pos.find(p=>p.id===e.linkedPosId);const car=linked?.vehicle||db.pos.find(p=>p.branch===e.branch&&normalizePlate(p.plate)===normalizePlate(e.plate||''))?.vehicle||e.car||'Not recorded';return [displayed(e.date),displayed(e.no),displayed(e.description),displayed(e.payee),displayed(e.plate),displayed(car),displayed(BRANCH_NAME(e.branch)),displayed(e.quantity||1),displayed(fmt(e.unitCost||0)),displayed(fmt(e.amount)),displayed(linked?.no||'Unlinked'),displayed(e.proof?.name||'MISSING'),displayed(e.status)];});
  const total=items.filter(e=>e.status!=='Rejected').reduce((n,e)=>n+e.amount,0);
- openPrint('RFP Parts Expenses',detail+page(header('RFP PARTS · PERIOD SUMMARY',range)+meta(name,range)+`<div class="metrics">${metric('Included Expenses',total)}${metric('Unlinked Parts',items.filter(e=>!e.linkedPosId).length)}${metric('Missing Receipts',items.filter(e=>!e.proof).length)}${metric('Rejected Amount',items.filter(e=>e.status==='Rejected').reduce((n,e)=>n+e.amount,0))}</div>`+signatures(db,items.at(-1)?.createdBy)),db.settings.reportLogo?.data);
+ const summary=`<div class="metrics">${metric('Included Expenses',total)}${metric('Unlinked Parts',items.filter(e=>!e.linkedPosId).length)}${metric('Missing Receipts',items.filter(e=>!e.proof).length)}${metric('Rejected Amount',items.filter(e=>e.status==='Rejected').reduce((n,e)=>n+e.amount,0))}</div>`+signatures(db,items.at(-1)?.createdBy);
+ const chunks:string[][][]=[];let remaining=rows.slice();
+ // Reserve space on the final sheet for totals/signatures. Small reports stay on one sheet.
+ while(remaining.length>18){const n=Math.min(30,remaining.length-18);chunks.push(remaining.splice(0,n));}chunks.push(remaining);
+ const html=chunks.map((chunk,i)=>page(header('RFP · PARTS EXPENSES',`${range} · Sheet ${i+1} of ${chunks.length}`)+meta(name,range)+listTable(['Date','RFP Ref','Part','Supplier','Plate','Car','Branch','Qty','Unit Cost','Amount','Linked POS','Receipt','Status'],chunk,[7,12,10,10,7,9,9,4,7,7,9,5,4])+`<div class="footline"><span>Details: ${chunk.length} rows · 30 maximum per sheet</span><span>Total records: ${rows.length}</span></div>`+(i===chunks.length-1?summary:''))).join('');
+ openPrint('RFP Parts Expenses',html,db.settings.reportLogo?.data);
+}
+
+/** RFP replenishment request: only parts purchased after previous approved disbursement.
+ * Includes summary on the final A4 sheet whenever it fits. */
+export function printPBDisbursement(db:Database,branch:BranchId){
+ const name=BRANCH_NAME(branch);
+ const previous=db.fundEntries.filter(e=>e.branch===branch&&e.fund==='RFP'&&e.kind==='replenishment'&&e.status==='Approved').sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+ const lastCutoff=previous?.createdAt;
+ const items=pendingRFPDisbursementRows(db,branch);
+ const amount=items.reduce((n,e)=>n+e.amount,0);
+ const currentFund=db.settings.rfpBase[branch]||0;
+ const cashOnHand=currentFund-amount;
+ const rows=items.map(e=>[
+  displayed(datePH(e.date)),displayed(e.no),displayed(e.description),displayed(e.payee),displayed(e.plate),
+  displayed(db.pos.find(p=>p.id===e.linkedPosId)?.vehicle||e.car||'Not recorded'),displayed(e.quantity||1),
+  displayed(fmt(e.unitCost||0)),displayed(fmt(e.amount)),displayed(e.proof?.name||'MISSING'),displayed(e.status)
+ ]);
+ const range=previous?`After last approved disbursement request: ${dateTime(lastCutoff!)}`:'From start of recorded purchases (no completed replenishment)';
+ const summary=`<div class="fund-summary"><div class="fund-summary-title">Automatic RFP Replenishment Request · ${esc(name)}</div>`+
+ `<div class="fund-figures"><div><span>Original Parts Fund</span><strong>${fmt(currentFund)}</strong></div><div><span>Eligible Parts Expenses</span><strong>${fmt(amount)}</strong></div><div><span>Cash on Hand (Estimated)</span><strong>${fmt(cashOnHand)}</strong></div><div><span>Previous Replenishment</span><strong>${esc(previous?.no||'None')}</strong></div><div><span>Purchases Covered</span><strong>${items.length}</strong></div></div>`+
+ `<div class="fund-request-result"><span>AMOUNT TO REPLENISH · eligible parts expenses since previous completed disbursement</span><strong>${fmt(amount)}</strong></div>`+
+ `<small>This is a replenishment of spent parts money, not a new fund request. Pending and rejected purchase decisions are listed for review, but rejected expenses are excluded. Earlier completed disbursements are not duplicated.</small>`+
+ `<p class="voucher-series"><b>Previous disbursement reference:</b> ${esc(previous?.no||'First disbursement')} · <b>Cutoff:</b> ${esc(lastCutoff?dateTime(lastCutoff):'No previous approved disbursement')} · <b>Branch:</b> ${esc(name)}</p>`+signatures(db,items.at(-1)?.createdBy,items.at(-1)?.signature)+'</div>';
+ const batches=pagination(rows,30);
+ const html=batches.map((batch,i)=>`<section class="print-page fund-print" data-density="${batch.length<=15?'roomy':batch.length<=25?'mid':'compact'}">`+
+ header('RFP DISBURSEMENT / REPLENISHMENT',`Sheet ${i+1} of ${batches.length}`)+meta(name,range,previous?.no||'First disbursement')+
+ listTable(['Date','RFP Ref','Part','Supplier','Plate','Car','Qty','Unit Cost','Total','Receipt','Status'],batch,[8,14,12,12,8,11,4,8,8,8,7])+
+ `<div class="footline"><span>${batch.length} purchases on this sheet · maximum 30</span><span>${rows.length} transactions after last completed disbursement</span></div>`+(i===batches.length-1?summary:'')+'</section>').join('');
+ openPrint(`RFP Disbursement · ${name}`,html,db.settings.reportLogo?.data);
 }
 
 export function printSales(db:Database,branch:BranchId,from='',to=''){

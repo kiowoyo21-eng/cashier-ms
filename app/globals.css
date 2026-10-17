@@ -51,3 +51,6 @@
 .replenishment-preview span{color:#717780}.replenishment-preview strong{white-space:nowrap}
 .replenishment-preview .replenishment-total{background:#fff7d4;border:1px solid #f5e4a5;border-radius:8px;padding:11px 9px;font-weight:700}
 .replenishment-preview .replenishment-total span{color:#1e252e}
+
+/* v5: two-field Brand & Model selector and compact searchable suggestions */
+.vehicle-autocomplete{position:relative;min-width:0}.vehicle-suggestion-list{position:absolute;z-index:10;top:calc(100% + 3px);left:0;right:0;max-height:180px;overflow:auto;background:#fff;border:1px solid #d9dce1;border-radius:8px;box-shadow:0 10px 24px #1118271d}.vehicle-suggestion-list>button{display:block;width:100%;background:#fff;border:0;border-bottom:1px solid #f1f2f5;text-align:left;padding:10px 12px;font-size:12px;cursor:pointer}.vehicle-suggestion-list>button:hover,.vehicle-suggestion-list>button:focus{background:#fff5ca}.vehicle-suggestion-list>p{padding:12px}.report-filters>.field{min-width:145px}@media(max-width:670px){.vehicle-suggestion-list{max-height:140px}.report-filters>.field{min-width:0}}

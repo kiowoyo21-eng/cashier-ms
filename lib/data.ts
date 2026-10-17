@@ -9,13 +9,35 @@ export const BRANCHES: {id:BranchId;name:string;short:string}[] = [
   {id:'MMM',name:'MM Mandaluyong',short:'MM Mandaluyong'}
 ];
 export const RF_CATEGORIES = ['Gasoline / Fuel','Transportation','Parking / Toll Fees','Food / Grocery','Office Supplies','Cleaning Supplies','Repairs & Maintenance','Utilities','Miscellaneous','Staff Welfare','Client Expense'] as const;
+/** Local reference catalogue for frontend validation. Replace source with Supabase vehicle directory later. */
+export const CAR_CATALOG = [
+ 'Toyota Vios','Toyota Wigo','Toyota Innova','Toyota Fortuner','Toyota Hilux','Toyota Corolla Altis','Toyota Avanza','Toyota Rush','Toyota Raize','Toyota Yaris','Toyota Hiace','Toyota Camry','Toyota Land Cruiser',
+ 'Honda City','Honda Civic','Honda Brio','Honda Jazz','Honda CR-V','Honda HR-V','Honda BR-V','Honda Accord',
+ 'Mitsubishi Mirage','Mitsubishi Mirage G4','Mitsubishi Xpander','Mitsubishi Montero Sport','Mitsubishi Strada','Mitsubishi L300',
+ 'Nissan Almera','Nissan Navara','Nissan Terra','Nissan Urvan','Nissan Kicks',
+ 'Ford Ranger','Ford Everest','Ford Territory','Ford EcoSport','Ford Explorer',
+ 'Suzuki Swift','Suzuki Dzire','Suzuki Ertiga','Suzuki Celerio','Suzuki Jimny','Suzuki S-Presso',
+ 'Hyundai Accent','Hyundai Stargazer','Hyundai Tucson','Hyundai Santa Fe','Hyundai Starex','Hyundai Creta',
+ 'Kia Soluto','Kia Stonic','Kia Seltos','Kia Sportage','Kia Carnival',
+ 'Isuzu D-Max','Isuzu mu-X','Chevrolet Trailblazer','Chevrolet Colorado','Mazda 2','Mazda 3','Mazda CX-5','Subaru Forester','Subaru XV','Subaru Impreza',
+ 'MG 5','MG ZS','Geely Coolray','Geely Okavango','BYD Atto 3','BYD Seal','Chery Tiggo 7 Pro','Chery Tiggo 8 Pro','GAC GS3','GAC GS8'
+] as const;
+export const vehicleName=(brandModel:string,year:string|number)=>`${brandModel.trim()} ${String(year).trim()}`.trim();
+export const monthRange=(month:string):[string,string]=>{if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))month=todayPH().slice(0,7);const [y,m]=month.split('-').map(Number);return [`${month}-01`,`${month}-${String(new Date(Date.UTC(y,m,0)).getUTCDate()).padStart(2,'0')}`];};
+export const timeMinutesPH=()=>{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Manila',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());return Number(parts.find(p=>p.type==='hour')?.value||0)*60+Number(parts.find(p=>p.type==='minute')?.value||0);};
+/** PB request period starts after previous fully approved replenishment. */
+export function pendingRFPDisbursementRows(db:Database,branch:BranchId):FundEntry[]{
+ const last=db.fundEntries.filter(e=>e.branch===branch&&e.fund==='RFP'&&e.kind==='replenishment'&&e.status==='Approved').sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+ return db.fundEntries.filter(e=>e.branch===branch&&e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&(!last||e.createdAt>last.createdAt)).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+}
+
 export const BRANCH_NAME = (id:BranchId) => BRANCHES.find(b=>b.id===id)?.name || id;
 export interface User {id:string;username:string;password:string;name:string;role:Role;branch:BranchId;active:boolean;lastLoginDate?:string;}
 export interface Receipt {name:string;data:string}
 export interface FundEntry {
   id:string;no:string;fund:Fund;kind:'expense'|'replenishment';branch:BranchId;date:string;amount:number;category:string;payee:string;vat:'VAT'|'Non-VAT';voucher:string;receiptNo:string;tin:string;description:string;notes:string;proof?:Receipt;signature?:string;
   status:Status;createdBy:string;createdAt:string;decisionBy?:string;decisionAt?:string;decisionNote?:string;
-  plate?:string;quantity?:number;unitCost?:number;linkedPosId?:string;checkNo?:string;bank?:string;depositDate?:string;
+  plate?:string;car?:string;quantity?:number;unitCost?:number;linkedPosId?:string;checkNo?:string;bank?:string;depositDate?:string;
 }
 export interface POSLine {id:string;type:'Service'|'Part';name:string;qty:number;price:number;cost:number;supplier?:string;receiptNo?:string;proof?:Receipt;}
 export interface POSPayment {id:string;mode:'Cash'|'GCash'|'Bank Transfer'|'Card';amount:number;date:string;}
@@ -48,8 +70,8 @@ export function createSeed():Database {
   const entry = (no:string,branch:BranchId,amount:number,payee:string,category:string,by:string,fund:Fund):FundEntry => ({id:uid(),no,fund,kind:'expense',branch,date,amount,category,payee,vat:'Non-VAT',voucher:'',receiptNo:'',tin:'',description:`Demo ${category.toLowerCase()} expense`,notes:'Sample transaction for frontend testing',status:'Pending',createdBy:by,createdAt:new Date().toISOString()});
   const rf = entry('UCM-Rotating Fund-00000001','UCM',1250,'Shop Supplies Co.','Office Supplies','u-cashier','RF'); rf.status='Approved';
   const rf2 = entry('UCQC-Rotating Fund-00000001','UCQC',680,'Office Mart','Office Supplies','u-admin','RF');
-  const rfp = entry('UCM-RFP-00000001','UCM',3800,'Auto Parts Supplier','Automotive Parts','u-pb','RFP');rfp.plate='ABC1234';rfp.quantity=2;rfp.unitCost=1900;
-  const pos:POS[]=[{id:uid(),no:'UCM-POS-00000001',branch:'UCM',date,client:'Sample Customer',phone:'',vehicle:'Toyota Vios',plate:'ABC1234',concern:'Routine service',items:[{id:uid(),type:'Service',name:'Oil Change',qty:1,price:1800,cost:450},{id:uid(),type:'Part',name:'Engine Oil',qty:1,price:2200,cost:1250}],payments:[{id:uid(),mode:'Cash',amount:4000,date}],status:'Closed',createdBy:'u-cashier',createdAt:new Date().toISOString(),closedAt:new Date().toISOString()}];
+  const rfp = entry('UCM-RFP-00000001','UCM',3800,'Auto Parts Supplier','Automotive Parts','u-pb','RFP');rfp.plate='ABC1234';rfp.car='Toyota Vios 2020';rfp.quantity=2;rfp.unitCost=1900;
+  const pos:POS[]=[{id:uid(),no:'UCM-POS-00000001',branch:'UCM',date,client:'Sample Customer',phone:'',vehicle:'Toyota Vios 2020',plate:'ABC1234',concern:'Routine service',items:[{id:uid(),type:'Service',name:'Oil Change',qty:1,price:1800,cost:450},{id:uid(),type:'Part',name:'Engine Oil',qty:1,price:2200,cost:1250}],payments:[{id:uid(),mode:'Cash',amount:4000,date}],status:'Closed',createdBy:'u-cashier',createdAt:new Date().toISOString(),closedAt:new Date().toISOString()}];
   return {users,fundEntries:[rf,rf2,rfp],pos,counts:[],incidents:[],turnovers:[],requests:[],audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Demo initialized',detail:'Sample data created; amounts are illustrative only'}],settings:{rfBase:base(),rfpBase:rfpBase(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
 }
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
