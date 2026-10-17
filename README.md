@@ -1,3 +1,17 @@
+# Version 4 — Combined Disbursement and Fund Replenishment
+
+The Disbursement form IS the request for reimbursement of spent fund money. It is **not a separate new-fund request** and there is **no user-entered request amount**. The request is automatically calculated as the difference between the authorized fund target and current cash on hand, less any already approved replenishments, with rejected expenses reversed. RF and RFP are calculated separately for each branch.
+
+**One printable report:** The expense/voucher table and the replenishment computation, deposit/reference details, category subtotals (RF) and prepared/checked/approved signatories now share the same report. A4 landscape is designed to hold **up to 30 expenses plus summary and signatures on one sheet** when content fits, otherwise the table paginates and the combined summary appears on the last detail page. Actual Chromium-generated PDFs for 30/31/60/61 fixtures were examined and page-count tested. Very long content, unusual custom logos, or many deposits can require extra pages.
+
+**Date filters:** Opening balance includes earlier transactions; selected-period expenses and approved deposits are separately totaled; the closing balance and amount still to replenish reflect any unreplenished cash carried forward. That carryover is explicitly disclosed so it is not confused with only the selected-period expenses.
+
+**Workflow:** Navigate to Cashier → Revolving Fund or PB → Parts Fund, choose Prepare Disbursement, view the automatic replenishment amount, preview the combined printable report, and submit for Admin approval. The cash balance does not increase until approval. The system blocks duplicate pending replenishment requests per fund and branch. Financial records are still stored in the current browser for testing (not production-safe), and Supabase remains disconnected.
+
+**Testing limitation:** Financial function smoke tests and print-preview PDF tests are separate from full Next.js production build / multi-device E2E validation. Run `npm install && npm run build` in an environment with package-registry access before production deployment. The existing localStorage key remains unchanged; export your JSON backup before testing upgrades.
+
+---
+
 # Version 3 — Reports-First CMS Frontend
 
 **Latest update:** Added specialized printable A4 landscape reports, date-range ledger balances, Closed-date Sales, RFP-linked COGS, denomination cash-count sheets, separate Friday Sales/Funds Turnovers and configurable print logo/signatories. See `REVISION_STATUS_V3.md` for details and remaining limitations. **Supabase is not yet connected.**

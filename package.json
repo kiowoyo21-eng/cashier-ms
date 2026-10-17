@@ -1,14 +1,15 @@
 {
   "name": "underchargers-fund-management-pwa",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:logic": "node tests/logic-smoke.cjs && node tests/revisions-smoke.cjs && node tests/v3-print-fixtures.cjs",
-    "test:reports": "node tests/v3-print-fixtures.cjs"
+    "test:logic": "node tests/logic-smoke.cjs && node tests/revisions-smoke.cjs && node tests/v3-print-fixtures.cjs && node tests/v4-disbursement-smoke.cjs",
+    "test:reports": "node tests/v3-print-fixtures.cjs",
+    "test:disbursement": "node tests/v4-disbursement-smoke.cjs && node tests/v3-print-fixtures.cjs"
   },
   "dependencies": {
     "next": "^15.5.0",

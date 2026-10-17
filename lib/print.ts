@@ -23,6 +23,47 @@ table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:8px}th{he
 .summary-section{margin:2.2mm 0;break-inside:avoid}.summary-section h2{font-size:12px;padding-bottom:2mm;margin:0 0 2mm;border-bottom:1px solid #ddd}.compact-table{max-width:165mm}.compact-table td,.compact-table th{height:5.2mm;font-size:9px}
 .signature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10mm;margin-top:6mm}.signature{border-top:1px solid #2d2e35;text-align:center;padding-top:2mm;min-height:14mm}.signature .name{display:block;font-size:10px;font-weight:700}.signature .role{color:#6f7782;font-size:8px}.signature img{height:10mm;max-width:60mm;object-fit:contain;margin-top:-18mm;display:block;margin-left:auto;margin-right:auto}
 .receipt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4mm}.receipt{border:1px solid #c3c8d2;padding:3mm;height:65mm;break-inside:avoid;display:flex;flex-direction:column}.receipt img{max-height:49mm;max-width:100%;object-fit:contain;align-self:center}.receipt .name{display:flex;justify-content:space-between;margin-bottom:2mm}.notice{padding:3mm;border:1px solid #e3c953;background:#fff6d5;margin:3mm 0}.cat-pair{display:grid;grid-template-columns:1fr 1fr;gap:5mm}.voucher-series{font-size:7px;max-height:8mm;overflow:hidden}.notes{white-space:pre-line;line-height:1.5}
+/* v4: a single combined Disbursement + Replenishment sheet whenever it fits. */
+.fund-print{min-height:0;padding:0;}
+.fund-print header{height:15mm;margin-bottom:1.5mm;padding-top:1mm}
+.fund-print header h1{font-size:12px}.fund-print .brand{font-size:11px}.fund-print .logo-slot{font-size:7px}
+.fund-print .meta{margin-bottom:1.5mm;font-size:8px}
+.fund-print .data-table{font-size:6.7px;line-height:1.1}
+.fund-print .data-table th{height:4.1mm;font-size:6.8px;padding:.4mm .65mm}
+.fund-print .data-table tbody tr,.fund-print .data-table tbody td{height:3.2mm;max-height:3.2mm}
+.fund-print .data-table td{padding:.25mm .65mm}
+.fund-print .data-table .clip{line-height:2.3mm}
+/* More legible expense rows on shorter requests; density only increases when required. */
+.fund-print[data-density="roomy"] .data-table{font-size:8.5px}
+.fund-print[data-density="roomy"] .data-table th{height:5.4mm;font-size:8px}
+.fund-print[data-density="roomy"] .data-table tbody tr,.fund-print[data-density="roomy"] .data-table tbody td{height:4.4mm;max-height:4.4mm}
+.fund-print[data-density="mid"] .data-table{font-size:7.5px}
+.fund-print[data-density="mid"] .data-table th{height:4.5mm;font-size:7.5px}
+.fund-print[data-density="mid"] .data-table tbody tr,.fund-print[data-density="mid"] .data-table tbody td{height:3.7mm;max-height:3.7mm}
+
+.fund-print .footline{margin-top:.8mm;font-size:7px}
+.fund-summary{margin-top:2mm;break-inside:avoid;page-break-inside:avoid;font-size:8px}
+.fund-summary .fund-summary-title{border-bottom:1px solid #c5c8d0;padding-bottom:.8mm;margin-bottom:1mm;font-size:9px;font-weight:800}
+.fund-figures{display:grid;grid-template-columns:repeat(5,1fr);gap:1.8mm}
+.fund-figures>div{border:1px solid #d2d6dc;border-radius:2px;padding:1.2mm 1.5mm;min-height:9mm}
+.fund-figures>div span{display:block;color:#58616c;font-size:7px;white-space:nowrap}
+.fund-figures>div strong{font-size:10px;margin-top:1mm;display:block;font-weight:700;white-space:nowrap}
+.fund-request-result{background:#fff0a5;border:1px solid #d9ad0a;display:flex;align-items:center;justify-content:space-between;padding:1.4mm 2mm;margin:1mm 0;font-size:9px}
+.fund-request-result strong{font-size:13px}
+.fund-summary small{font-size:7px;color:#59616b}
+.fund-extra{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin-top:1.2mm}
+.fund-extra h3{font-size:8px;margin:0 0 .7mm}
+.fund-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7mm 1.8mm;font-size:7px}
+.fund-category{display:flex;justify-content:space-between;gap:2mm;border-bottom:1px dotted #d9dce0;min-width:0}
+.fund-category span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.fund-category b{white-space:nowrap}
+.fund-deposits{width:100%;font-size:7px}
+.fund-deposits td,.fund-deposits th{padding:.35mm .7mm;height:3.3mm}
+.fund-summary .signature-grid{margin-top:4mm;gap:6mm}
+.fund-summary .signature{min-height:11mm;padding-top:1mm}
+.fund-summary .signature .name{font-size:9px}.fund-summary .signature .role{font-size:7px}
+.fund-summary .signature img{max-height:7mm;margin-top:-11mm}
+.fund-summary .voucher-series{margin-top:1mm;line-height:1.4;max-height:4.2mm}
 .actions{position:fixed;bottom:15px;right:15px;z-index:999;padding:9px;border-radius:8px;background:white;border:1px solid #cbd1d8;box-shadow:0 4px 14px #0002}.actions button{background:#facc15;border:none;padding:11px 18px;border-radius:6px;font-weight:700;cursor:pointer}
 @media print{.actions{display:none!important}.print-page{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 `;
@@ -47,25 +88,52 @@ function signatures(db:Database,preparedById?:string,signature?:string,at?:strin
   ].map(([role,name,img])=>`<div class="signature">${img?.startsWith('data:image/')?`<img src="${img}" alt="Recorded signature"/>`:''}<span class="name">${esc(name)}</span><span class="role">${esc(role)}</span>${at?`<div class="mini muted">${esc(at)}</div>`:''}</div>`).join('')}</div>`;
 }
 
+/** Disbursement and replenishment are ONE request/document. The automatically
+ * calculated replenishment amount is the spent amount that has not been restored.
+ * The last detail sheet always includes the financial summary and signatories;
+ * details paginate only when the transaction list no longer fits A4 landscape. */
 export function printFundReport(db:Database,branch:BranchId,fund:Fund,_entries:FundEntry[],from='',to=''){
-  const s=disbursementSummary(db,branch,fund,from,to),range=period(from,to),b=BRANCH_NAME(branch),title=fund==='RF'?'REVOLVING FUND CASH DISBURSEMENT':'RFP CASH DISBURSEMENT';
-  const rows=s.period.filter(e=>e.kind==='expense').sort((a,b)=>a.date.localeCompare(b.date)||a.no.localeCompare(b.no)).map(e=>[
-    displayed(datePH(e.date)),displayed(e.no),displayed(e.payee),displayed(e.description),displayed(e.category),displayed(e.voucher),displayed(e.receiptNo),
-    `<span class="num">${fmt(e.vat==='VAT'?e.amount:0)}</span>`,`<span class="num">${fmt(e.vat==='Non-VAT'?e.amount:0)}</span>`,displayed(e.status)
-  ]);
-  const detail=reportPages(title,b,range,['Date','Reference','Supplier','Description / Part','Category','CV No.','Receipt','VAT','Non-VAT','Status'],rows,[9,17,12,17,12,9,8,7,7,12]);
-  const refNos=s.period.filter(e=>e.kind==='expense').map(e=>e.voucher).filter(Boolean);
-  const voucherDisplay=(()=>{if(!refNos.length)return 'Not specified';const parts=refNos.map(x=>/^(.*?)(\d+)$/.exec(x));if(parts.every(x=>x&&x[1]===parts[0]?.[1])){const numbers=parts.map(x=>Number(x![2])).sort((a,b)=>a-b);if(numbers.every((x,i)=>i===0||x===numbers[i-1]+1))return `${parts[0]![1]}${numbers[0]} to ${parts[0]![1]}${numbers.at(-1)} (${refNos.length} vouchers)`;}return refNos.length>12?`${refNos.slice(0,12).join(', ')} and ${refNos.length-12} more (see details)`:refNos.join(', ');})();
-  const deposits=s.checkDeposits.map(e=>`<tr>${cell(e.date)}${cell(e.no)}${cell(e.bank||'—')}${cell(e.checkNo||'—')}${cell(fmt(e.amount),true)}</tr>`).join('')||`<tr><td colspan="5">No approved check deposits or replenishments in this period.</td></tr>`;
-  const categoryRows=Object.entries(categoryTotals(s.period)).sort((a,b)=>b[1]-a[1]);const cat=`<div class="cat-pair"><table class="compact-table">${categoryRows.slice(0,6).map(([k,v])=>tRow(k,fmt(v))).join('')}</table><table class="compact-table">${categoryRows.slice(6).map(([k,v])=>tRow(k,fmt(v))).join('')}</table></div>`;
-  const last=s.period.filter(e=>e.kind==='expense').slice(-1)[0];
-  const summary=page(header(`${fund} DISBURSEMENT SUMMARY`,range)+meta(b,range,s.period.at(-1)?.no)+
-    `<div class="metrics">${metric('Opening / Brought Forward',s.opening)}${metric('Less: Period Expenses',s.expenses)}${metric('Add: Approved Deposits',s.deposits)}${metric('Closing Cash on Hand',s.remaining)}</div>`+
-    `<div class="summary-section"><h2>Full Replenishment Request Computation</h2><table class="compact-table">${tRow('Authorized Fund Target',fmt(s.base))}${tRow('Opening Fund / Previous Carryover',fmt(s.opening))}${tRow('Less: Expenses This Period',fmt(-s.expenses))}${tRow('Add: Approved Check Deposits / Replenishments',fmt(s.deposits))}${tRow('Cash on Hand / Remaining',fmt(s.remaining))}<tr class="total"><td>AMOUNT REQUESTED TO RESTORE TARGET</td><td class="num">${fmt(s.amountRequested)}</td></tr></table><p class="voucher-series">Voucher references: ${esc(voucherDisplay)} · Request = target less closing balance.</p></div>`+
-    `<div class="summary-section"><h2>Check Deposit / Replenishment Details</h2><table class="compact-table"><thead><tr><th>Date</th><th>Reference</th><th>Bank</th><th>Check No.</th><th>Amount</th></tr></thead><tbody>${deposits}</tbody></table></div>`+
-    (fund==='RF'?`<div class="summary-section"><h2>Expense Category Subtotals</h2>${categoryRows.length?cat:"<p>No period expenses</p>"}</div>`:'')+
-    signatures(db,last?.createdBy,last?.signature,last?datePH(last.date):undefined));
-  openPrint(`${title} · ${b}`,detail+summary,db.settings.reportLogo?.data);
+ const s=disbursementSummary(db,branch,fund,from,to),range=period(from,to),branchName=BRANCH_NAME(branch);
+ const title=fund==='RF'?'REVOLVING FUND DISBURSEMENT & REPLENISHMENT':'RFP DISBURSEMENT & REPLENISHMENT';
+ const expenses=s.period.filter(e=>e.kind==='expense').sort((a,b)=>a.date.localeCompare(b.date)||a.no.localeCompare(b.no));
+ const rows=expenses.map(e=>[
+   displayed(datePH(e.date)),displayed(e.no),displayed(e.payee),displayed(e.description),displayed(e.category),displayed(e.voucher),displayed(e.receiptNo),
+   `<span class="num">${fmt(e.vat==='VAT'?e.amount:0)}</span>`,`<span class="num">${fmt(e.vat==='Non-VAT'?e.amount:0)}</span>`,displayed(e.status)
+ ]);
+ const refNos=expenses.map(e=>e.voucher).filter(Boolean);
+ const voucherDisplay=(()=>{if(!refNos.length)return 'Not specified';const parts=refNos.map(x=>/^(.*?)(\d+)$/.exec(x));if(parts.every(x=>x&&x[1]===parts[0]?.[1])){const numbers=parts.map(x=>Number(x![2])).sort((a,b)=>a-b);if(numbers.every((x,i)=>i===0||x===numbers[i-1]+1))return `${parts[0]![1]}${numbers[0]} to ${parts[0]![1]}${numbers.at(-1)} (${refNos.length} vouchers)`;}return refNos.length>12?`${refNos.slice(0,12).join(', ')} and ${refNos.length-12} more (see details)`:refNos.join(', ');})();
+ const catRows=Object.entries(categoryTotals(s.period)).sort((a,b)=>b[1]-a[1]);
+ const catHTML=catRows.length?`<div class="fund-categories">${catRows.map(([k,v])=>`<div class="fund-category"><span>${esc(k)}</span><b>${fmt(v)}</b></div>`).join('')}</div>`:'<small>No expenses in selected period</small>';
+ const deposits=s.checkDeposits;
+ const depositHTML=deposits.length?`<table class="fund-deposits"><thead><tr><th>Date</th><th>Bank</th><th>Check / Reference</th><th class="num">Amount</th></tr></thead><tbody>${deposits.map(e=>`<tr>${cell(datePH(e.date))}${cell(e.bank||'—')}${cell(e.checkNo||e.no)}${cell(fmt(e.amount),true)}</tr>`).join('')}</tbody></table>`:'<small>None within selected period</small>';
+ const last=expenses.at(-1);
+ const figures=[['Fund Target',s.base],['Opening Cash on Hand',s.opening],['Less: Expenses',s.expenses],['Add: Replenishments',s.deposits],['Closing Cash on Hand',s.remaining]];
+ const figuresHTML=`<div class="fund-figures">${figures.map(([name,value])=>`<div><span>${esc(name)}</span><strong>${fmt(Number(value))}</strong></div>`).join('')}</div>`;
+ const summary=`<div class="fund-summary"><div class="fund-summary-title">Fund Reconciliation & Replenishment Request (Combined)</div>${figuresHTML}`+
+   `<div class="fund-request-result"><span>AUTOMATIC AMOUNT TO REPLENISH · spent cash not yet restored</span><strong>${fmt(s.amountRequested)}</strong></div>`+
+   `<small>Previous unreplenished cash: ${fmt(s.base-s.opening)} + period expenses: ${fmt(s.expenses)} − approved replenishments: ${fmt(s.deposits)} = ${fmt(s.base-s.remaining)} net amount outstanding (minimum request ₱0). Historical expenses can be carried forward. Rejected expenses are excluded.</small>`+
+   `<div class="fund-extra"><div>${fund==='RF'?`<h3>Expense Category Subtotals</h3>${catHTML}`:`<h3>Parts Purchase Summary</h3><small>${expenses.length} parts purchases · ${fmt(s.expenses)} in period expenses</small>`}</div><div><h3>Check Deposits / Replenishments</h3>${depositHTML}</div></div>`+
+   `<p class="voucher-series"><b>Cash Voucher References:</b> ${esc(voucherDisplay)} · <b>Branch:</b> ${esc(branchName)} · <b>Period:</b> ${esc(range)}</p>`+
+   signatures(db,last?.createdBy,last?.signature,last?datePH(last.date):undefined)+'</div>';
+ // Reserve more room on the last detail sheet if numerous check deposits exist.
+ // Up to 30 rows are still allowed per sheet. Short requests print as a single sheet.
+ const finalPageCapacity=Math.max(8,30-Math.max(0,deposits.length-2)*2);
+ const batches:string[][][]=[];
+ let remaining=rows.slice();
+ while(remaining.length>finalPageCapacity){
+  const count=Math.min(30,remaining.length-finalPageCapacity);
+  batches.push(remaining.splice(0,count));
+ }
+ batches.push(remaining);
+ const detail=batches.map((part,index)=>{
+  const final=index===batches.length-1;
+  return `<section class="print-page fund-print" data-density="${part.length<=15?'roomy':part.length<=25?'mid':'compact'}">`+
+    header(title,`${range} · Sheet ${index+1} of ${batches.length}`)+meta(branchName,range,expenses.at(-1)?.no)+
+    listTable(['Date','Reference','Supplier','Description / Part','Category','CV No.','Receipt','VAT','Non-VAT','Status'],part,[9,17,12,17,12,9,8,7,7,12])+
+    `<div class="footline"><span>${part.length} expense rows this sheet · maximum 30</span><span>Total expense rows: ${rows.length}</span></div>`+
+    (final?summary:'')+'</section>';
+ }).join('');
+ openPrint(`${title} · ${branchName}`,detail,db.settings.reportLogo?.data);
 }
 
 export function printRFPParts(db:Database,branch:BranchId,from='',to=''){

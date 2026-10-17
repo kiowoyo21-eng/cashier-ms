@@ -59,6 +59,13 @@ export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
  return db.fundEntries.filter(e=>e.branch===branch&&e.fund===fund&&e.status!=='Rejected').reduce((sum,e)=>sum+(e.kind==='replenishment'?(e.status==='Approved'?e.amount:0):-e.amount),initial);
 }
+/** Only replace cash that has already been spent and not yet replenished. 
+ * Pending replenishments are not included in the cash-on-hand balance; a second
+ * request is blocked in the UI until the previous one is decided. */
+export function replenishmentDue(db:Database, branch:BranchId, fund:Fund):number {
+ const target=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
+ return Math.round(Math.max(0,target-balance(db,branch,fund))*100)/100;
+}
 export function nextNumber(db:Database,branch:BranchId,type:'RF'|'RFP'|'POS'):string {
   const prefix=type==='RF'?`${branch}-Rotating Fund-`:`${branch}-${type}-`;const all=type==='POS'?db.pos.map(v=>v.no):db.fundEntries.filter(v=>v.fund===type).map(v=>v.no);
   const max=Math.max(0,...all.filter(v=>v.startsWith(prefix)).map(v=>Number(v.slice(prefix.length))||0));
