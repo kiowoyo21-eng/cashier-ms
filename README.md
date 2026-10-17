@@ -1,3 +1,7 @@
+> **v8.4 update:** Inventory now starts **EMPTY** with no sample products; Admin can use **Add Product** on Dashboard or Inventory. Untouched preloaded v8.3 demo products are cleaned from existing browser data automatically; used samples are archived to protect accounting history. All product registration and editing is Admin-only. Details in [v8.4 notes](REVISION_STATUS_V8_4.md).
+
+> **v8.3 update:** Only Admin can register/edit Inventory products and assign barcodes (branch selectable). Cashier retains scanning, branch Stock In, and POS Stock Out; PB remains RFP-only. No Super Admin role. See [revision notes](REVISION_STATUS_V8_3.md).
+
 # Underchargers Fund Management System — v8 Frontend
 
 > **Important:** v8 adds browser-local barcode inventory, locked Stock Out with Admin-reviewed return requests, and split POS Draft COGS. Production Supabase security is not yet connected. [Read V8 status](REVISION_STATUS_V8.md).
@@ -173,3 +177,6 @@ Finalize UX and unanswered policy decisions, then swap local repositories with S
 **Unimplemented or awaiting confirmation:** automatic downloadable PDF combining PDF receipt attachments, true 30-row pagination on every report subtype, production background deadline alerts when the app isn't open, backend-enforced audit/access controls, approval signatures on printed forms, bank/check settlement rules. Supabase remains intentionally **disconnected**.
 
 **Do not use browser-local prototype for actual financial processing.**
+
+## v8.5 Admin Bulk Scan
+Admin → Inventory → **Bulk Scan**. Scan continuously; duplicate barcodes are ignored. Complete product details in the list and press **Register All** once. Initial inventory is empty until Admin registers products.

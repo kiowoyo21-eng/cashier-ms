@@ -92,3 +92,31 @@
 /* v8.3: Compact, responsive inventory permissions actions. */
 .inventory-row-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:120px}
 .inventory-row-actions .button{white-space:nowrap}
+
+/* v8.4: centered first-use registration action on an empty Inventory */
+.inventory-empty-state{text-align:center;display:flex;flex-direction:column;gap:0;align-items:center;padding:0 12px 23px}
+.inventory-empty-state .empty{padding:23px 12px 12px}
+.inventory-empty-state .button{min-width:160px}
+
+/* v8.5 Admin Bulk Scan: compact barcode queue, inline product data entry */
+.inventory-admin-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bulk-scan-panel{margin:8px 18px 16px;padding:15px;border:1px solid #e5d084;border-radius:12px;background:#fffefa}
+.bulk-scan-header{display:flex;justify-content:space-between;gap:14px;align-items:start;margin-bottom:14px}
+.bulk-scan-header h3{display:flex;align-items:center;gap:8px;margin:0;font-size:15px}
+.bulk-scan-header p{font-size:11px;color:#717783;margin:4px 0 0}
+.bulk-scan-controls{display:grid;grid-template-columns:minmax(160px,1fr) minmax(200px,1.5fr) auto auto;align-items:end;gap:9px}
+.bulk-scan-controls .field input,.bulk-scan-controls .field select{width:100%;min-width:0}
+.bulk-scan-controls .button{white-space:nowrap;min-height:38px}
+.bulk-scan-camera{max-width:550px;margin:12px 0}
+.bulk-scan-message{font-size:11px;background:#fff4d2;border-radius:6px;padding:9px 11px;margin:10px 0;line-height:1.5}
+.bulk-scan-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11px;margin-bottom:10px}
+.bulk-scan-meta span{color:#6b7280}.bulk-scan-empty{padding:22px 12px;border:1px dashed #e2dcbf;border-radius:8px;color:#717783;text-align:center;font-size:12px;line-height:1.5}
+.bulk-scan-rows{max-height:440px;overflow-y:auto;display:grid;gap:8px}
+.bulk-scan-row{padding:10px;border:1px solid #e6e8eb;border-radius:9px;background:#fff}
+.bulk-scan-row-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:12px}
+.bulk-scan-row-title .text-button{display:inline-flex;gap:4px;align-items:center}
+.bulk-scan-fields{display:grid;grid-template-columns:minmax(120px,1.7fr) minmax(142px,1.4fr) repeat(5,minmax(70px,.7fr));gap:7px}
+.bulk-scan-fields .field{min-width:0}.bulk-scan-fields input,.bulk-scan-fields select{width:100%;min-width:0}
+.bulk-scan-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+@media(max-width:1180px){.bulk-scan-controls{grid-template-columns:1fr 1fr}.bulk-scan-fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.inventory-admin-actions{width:100%}.inventory-admin-actions .button{flex:1;white-space:nowrap}.bulk-scan-panel{margin:8px 12px;padding:11px}.bulk-scan-controls{grid-template-columns:1fr 1fr}.bulk-scan-controls .field{grid-column:span 2}.bulk-scan-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.bulk-scan-fields .field:first-child,.bulk-scan-fields .field:nth-child(2){grid-column:span 2}.bulk-scan-rows{max-height:520px}.bulk-scan-actions .button{flex:1}}

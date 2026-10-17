@@ -31,7 +31,7 @@ assert.throws(()=>d.recordStockIn(next,other.id,1,'u-cashier'),/No Stock In acce
 next=d.recordStockIn(next,other.id,1,'u-admin','Admin receipt');assert.equal(d.stockAvailable(next,other),4);
 // Source-level UI regression: only Admin sees register/edit actions and handlers are role guarded.
 const page=sourceFile('app/page.tsx');
-assert(page.includes("user.role==='admin'&&<button className=\"button button-primary\" onClick={openNewProduct}".replaceAll('\\\"','\"')));
+assert(page.includes("user.role==='admin'&&<button type=\"button\" className=\"button button-primary\" onClick={openNewProduct}"));
 assert(page.includes("if(!user||user.role!=='admin'||locked)return;"));
 assert(page.includes("dialog==='newProduct'&&user.role==='admin'"));
 assert(page.includes("dialog==='editProduct'&&user.role==='admin'"));

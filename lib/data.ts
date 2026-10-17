@@ -43,7 +43,7 @@ export interface FundEntry {
   accountingBy?:string;accountingAt?:string;presidentBy?:string;presidentAt?:string;receivedAt?:string;
 }
 export type InventoryCategory = 'Automotive Parts & Products'|'Shop Supplies';
-export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;sellPrice:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;updatedAt?:string;updatedBy?:string;}
+export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;sellPrice:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;updatedAt?:string;updatedBy?:string;archivedAt?:string;}
 /** Append-only movement ledger. StockOut and StockReturn records must never be mutated. */
 export interface StockMovement {id:string;productId:string;branch:BranchId;kind:'StockIn'|'StockOut'|'StockReturn';qty:number;unitCost:number;posId?:string;sourceStockOutId?:string;by:string;at:string;notes?:string;}
 export interface StockCorrection {id:string;stockOutId:string;branch:BranchId;posId:string;qty:number;reason:string;requestedBy:string;requestedAt:string;status:'Pending'|'Approved'|'Rejected';decidedBy?:string;decidedAt?:string;decisionNotes?:string;}
@@ -80,15 +80,41 @@ export function createSeed():Database {
   const rf2 = entry('UCQC-Rotating Fund-00000001','UCQC',680,'Office Mart','Office Supplies','u-admin','RF');
   const rfp = entry('UCM-RFP-00000001','UCM',3800,'Auto Parts Supplier','Automotive Parts','u-pb','RFP');rfp.plate='ABC1234';rfp.car='Toyota Vios 2020';rfp.quantity=2;rfp.unitCost=1900;
   const pos:POS[]=[{id:uid(),no:'UCM-POS-00000001',branch:'UCM',date,client:'Sample Customer',phone:'',vehicle:'Toyota Vios 2020',plate:'ABC1234',concern:'Routine service',items:[{id:uid(),type:'Service',name:'Oil Change',qty:1,price:1800,cost:450},{id:uid(),type:'Part',name:'Engine Oil',qty:1,price:2200,cost:1250}],payments:[{id:uid(),mode:'Cash',amount:4000,date}],status:'Closed',createdBy:'u-cashier',createdAt:new Date().toISOString(),closedAt:new Date().toISOString()}];
-  const inventory:InventoryProduct[]=BRANCHES.flatMap(b=>[
-    {id:uid(),barcode:`${b.id}10001`,name:'Engine Oil 5W-30',category:'Automotive Parts & Products' as const,branch:b.id,unit:'Bottle',sellPrice:780,unitCost:440,openingQty:24,reorderAt:5,createdAt:new Date().toISOString()},
-    {id:uid(),barcode:`${b.id}10002`,name:'Oil Filter',category:'Automotive Parts & Products' as const,branch:b.id,unit:'Piece',sellPrice:550,unitCost:310,openingQty:12,reorderAt:4,createdAt:new Date().toISOString()},
-    {id:uid(),barcode:`${b.id}10003`,name:'Cleaning Detergent',category:'Shop Supplies' as const,branch:b.id,unit:'Bottle',sellPrice:0,unitCost:160,openingQty:15,reorderAt:3,createdAt:new Date().toISOString()},
-  ]);
-  return {users,fundEntries:[rf,rf2,rfp],pos,inventory,stockMovements:[],stockRequests:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Demo initialized',detail:'Sample data created; amounts are illustrative only'}],settings:{rfBase:base(),rfpBase:rfpBase(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
+  return {users,fundEntries:[rf,rf2,rfp],pos,inventory:[],stockMovements:[],stockRequests:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Demo initialized',detail:'Sample data created; amounts are illustrative only'}],settings:{rfBase:base(),rfpBase:rfpBase(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
 }
+/** v8.4 migration: only discard untouched auto-created v8.0–v8.3 sample products.
+ * Never delete an Admin-created product, an edited sample, or any product
+ * referenced by a stock movement. Stock Out/COGS/audit history stay intact. */
+export function removeUntouchedDemoProducts(db:Database):Database {
+ const demoDetails:{suffix:string;name:string;category:InventoryCategory;unit:string;sellPrice:number;unitCost:number;openingQty:number;reorderAt:number}[]=[
+  {suffix:'10001',name:'Engine Oil 5W-30',category:'Automotive Parts & Products',unit:'Bottle',sellPrice:780,unitCost:440,openingQty:24,reorderAt:5},
+  {suffix:'10002',name:'Oil Filter',category:'Automotive Parts & Products',unit:'Piece',sellPrice:550,unitCost:310,openingQty:12,reorderAt:4},
+  {suffix:'10003',name:'Cleaning Detergent',category:'Shop Supplies',unit:'Bottle',sellPrice:0,unitCost:160,openingQty:15,reorderAt:3}
+ ];
+ const referenced=new Set((db.stockMovements||[]).map(m=>m.productId));
+ const isLegacyDemo=(p:InventoryProduct)=>{
+  const fixture=demoDetails.find(d=>p.barcode===`${p.branch}${d.suffix}`);
+  return !!fixture && p.name===fixture.name && p.category===fixture.category
+   && p.unit===fixture.unit && p.sellPrice===fixture.sellPrice
+   && p.unitCost===fixture.unitCost && p.openingQty===fixture.openingQty
+   && p.reorderAt===fixture.reorderAt && !p.updatedAt && !p.updatedBy;
+ };
+ let removed=0,archived=0;
+ const inventory=(db.inventory||[]).flatMap(p=>{
+  if(!isLegacyDemo(p)||p.archivedAt)return [p];
+  if(referenced.has(p.id)){
+   archived++;
+   // Preserve original product identity for posted Stock Out, COGS and audit.
+   // Archived products are hidden from usable inventory and can't be issued again.
+   return [{...p,archivedAt:new Date().toISOString()}];
+  }
+  removed++;return [];
+ });
+ return !removed&&!archived?db:log({...db,inventory},'system','Demo inventory cleanup',`Removed ${removed} untouched sample products; archived ${archived} used samples to preserve POS/COGS history.`);
+}
+
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
-export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];return d;}}}catch{}return createSeed();}
+export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];return removeUntouchedDemoProducts(d);}}}catch{}return createSeed();}
 export function storeDB(db:Database):boolean {try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));return true;}catch{return false;}}
 export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
@@ -163,6 +189,23 @@ export function registerInventoryProduct(db:Database,input:NewInventoryProduct,b
  const next=log({...db,inventory:[product,...db.inventory]},by,'Inventory product created',`${details.barcode} · ${details.name} · ${input.branch}`);
  return input.initialQty>0?recordStockIn(next,product.id,input.initialQty,by,'New product initial stock'):next;
 }
+/** Atomic Admin-only batch product registration. An invalid row or duplicate rejects
+ * the entire batch, so partial product lists are never persisted. */
+export function registerInventoryProductsBulk(db:Database,items:NewInventoryProduct[],by:string):Database {
+ requireAdmin(db,by);
+ if(!items.length)throw new Error('Scan at least one new product before saving.');
+ const seen=new Set<string>();
+ for(const item of items){
+  if(!BRANCHES.some(b=>b.id===item.branch))throw new Error('Choose a valid branch.');
+  const code=cleanProductDetails(item).barcode;
+  if(!Number.isInteger(item.initialQty)||item.initialQty<0)throw new Error('Initial quantity must be a nonnegative whole number.');
+  const key=`${item.branch}:${code}`;
+  if(seen.has(key))throw new Error(`Duplicate barcode in batch: ${code}`);
+  if(db.inventory.some(p=>p.branch===item.branch&&p.barcode===code))throw new Error(`Already registered: ${code} (${item.branch})`);
+  seen.add(key);
+ }
+ return items.reduce((next,item)=>registerInventoryProduct(next,item,by),db);
+}
 export function updateInventoryProduct(db:Database,productId:string,input:ProductDetails,by:string):Database {
  requireAdmin(db,by);
  const old=db.inventory.find(p=>p.id===productId);
@@ -177,7 +220,7 @@ export function updateInventoryProduct(db:Database,productId:string,input:Produc
 }
 export function recordStockIn(db:Database,productId:string,qty:number,by:string,notes=''):Database {
  const product=db.inventory.find(p=>p.id===productId);
- if(!product||!Number.isInteger(qty)||qty<=0)throw new Error('Invalid product or positive quantity required.');
+ if(!product||product.archivedAt||!Number.isInteger(qty)||qty<=0)throw new Error('Invalid/archived product or positive quantity required.');
  const actor=db.users.find(u=>u.id===by&&u.active);
  if(!actor||(actor.role!=='admin'&&(actor.role!=='cashier'||actor.branch!==product.branch)))throw new Error('No Stock In access to this branch.');
  const movement:StockMovement={id:uid(),productId,branch:product.branch,kind:'StockIn',qty,unitCost:product.unitCost,by,at:new Date().toISOString(),notes};
@@ -185,7 +228,7 @@ export function recordStockIn(db:Database,productId:string,qty:number,by:string,
 }
 export function confirmStockOut(db:Database,productId:string,posId:string,qty:number,by:string):Database {
  const product=db.inventory.find(p=>p.id===productId),pos=db.pos.find(p=>p.id===posId),actor=db.users.find(u=>u.id===by&&u.active);
- if(!actor||actor.role!=='cashier'||!product||!pos||actor.branch!==pos.branch||product.branch!==pos.branch||pos.status!=='Pending')throw new Error('Stock Out requires an open POS and authorized Cashier in the same branch.');
+ if(!actor||actor.role!=='cashier'||!product||product.archivedAt||!pos||actor.branch!==pos.branch||product.branch!==pos.branch||pos.status!=='Pending')throw new Error('Stock Out requires an open POS and authorized Cashier in the same branch.');
  if(!Number.isInteger(qty)||qty<=0||stockAvailable(db,product)<qty)throw new Error('Insufficient stock or invalid quantity.');
  const movement:StockMovement={id:uid(),productId,branch:product.branch,kind:'StockOut',qty,unitCost:product.unitCost,posId,by,at:new Date().toISOString()};
  return log({...db,stockMovements:[movement,...db.stockMovements]},by,'Locked Stock Out',`${product.name} · ${pos.no} · -${qty} · ${pesos(qty*product.unitCost)}`);

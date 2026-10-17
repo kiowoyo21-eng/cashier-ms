@@ -3,6 +3,8 @@ const ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript');
 const root=path.join(__dirname,'..');
 function getModule(name){const source=fs.readFileSync(path.join(root,name),'utf8');const r=ts.transpileModule(source,{fileName:name,reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}});assert.equal(r.diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0);const m={exports:{}};new Function('module','exports','require',r.outputText)(m,m.exports,require);return m.exports;}
 const d=getModule('lib/data.ts');let db=d.createSeed();
+function addOilFilter(data,branch){return d.registerInventoryProduct(data,{branch,barcode:branch+'TESTFILTER',name:'Oil Filter',category:'Automotive Parts & Products',unit:'Piece',unitCost:310,sellPrice:550,reorderAt:4,initialQty:12},'u-admin');}
+db=addOilFilter(addOilFilter(db,'UCM'),'UCQC');
 const inv=db.inventory.find(p=>p.branch==='UCM'&&p.name==='Oil Filter'),other=db.inventory.find(p=>p.branch==='UCQC'&&p.name==='Oil Filter');
 assert(inv&&other);assert.equal(d.stockAvailable(db,inv),12);assert.equal(d.stockAvailable(db,other),12);
 // A saved Draft can receive scanned stock with no sale items yet.
@@ -22,7 +24,7 @@ db=d.decideStockReturn(db,request.id,true,'u-admin');assert.equal(db.stockMoveme
 db=d.requestStockReturn(db,movement.id,1,'Remaining filter unused','u-cashier');let req=db.stockRequests[0];db=d.decideStockReturn(db,req.id,false,'u-admin');assert.equal(d.stockAvailable(db,inv),11);assert.equal(db.stockRequests[0].status,'Rejected');
 db=d.requestStockReturn(db,movement.id,1,'Unused after recheck','u-cashier');req=db.stockRequests[0];db=d.decideStockReturn(db,req.id,true,'u-admin');assert.equal(d.stockAvailable(db,inv),12);assert.equal(d.posCostTotals(pos,db).inventory,0);
 // Adds inventory cost once, replacing manual cost on matching part, PB separate.
-let cdb=d.createSeed();const product=cdb.inventory.find(p=>p.branch==='UCM'&&p.name==='Oil Filter');const draft={...pos,id:'both',items:[{id:'manual',type:'Part',name:'Oil Filter',qty:1,price:700,cost:999}]};cdb.pos.push(draft);
+let cdb=addOilFilter(d.createSeed(),'UCM');const product=cdb.inventory.find(p=>p.branch==='UCM'&&p.name==='Oil Filter');const draft={...pos,id:'both',items:[{id:'manual',type:'Part',name:'Oil Filter',qty:1,price:700,cost:999}]};cdb.pos.push(draft);
 cdb=d.confirmStockOut(cdb,product.id,'both',1,'u-cashier');const cost=d.posCostTotals(draft,cdb);assert.equal(cost.inventory,310);assert.equal(cost.manual,0);assert.equal(d.posCOGS(draft,cdb),310);
 const part={id:'part-1',no:'UCM-RFP-00000099',fund:'RFP',kind:'expense',branch:'UCM',date:d.todayPH(),amount:1800,category:'Automotive Parts',payee:'Part Supplier',vat:'Non-VAT',voucher:'',receiptNo:'',tin:'',description:'Brake Pads',notes:'',status:'Pending',createdBy:'u-pb',createdAt:new Date().toISOString(),plate:'214UWI',quantity:1,unitCost:1800,linkedPosId:'both'};cdb.fundEntries.push(part);
 assert.equal(d.posCostTotals(draft,cdb).rfp,1800);assert.equal(d.posCOGS(draft,cdb),2110);
