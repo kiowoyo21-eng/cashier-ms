@@ -37,13 +37,13 @@ export interface Receipt {name:string;data:string}
 export interface FundEntry {
   id:string;no:string;fund:Fund;kind:'expense'|'replenishment';branch:BranchId;date:string;amount:number;category:string;payee:string;vat:'VAT'|'Non-VAT';voucher:string;receiptNo:string;tin:string;description:string;notes:string;proof?:Receipt;signature?:string;
   status:Status;createdBy:string;createdAt:string;decisionBy?:string;decisionAt?:string;decisionNote?:string;
-  plate?:string;car?:string;quantity?:number;unitCost?:number;linkedPosId?:string;checkNo?:string;bank?:string;depositDate?:string;
+  plate?:string;car?:string;quantity?:number;unitCost?:number;linkedPosId?:string;purchaseId?:string;checkNo?:string;bank?:string;depositDate?:string;
 }
 export interface POSLine {id:string;type:'Service'|'Part';name:string;qty:number;price:number;cost:number;supplier?:string;receiptNo?:string;proof?:Receipt;}
 export interface POSPayment {id:string;mode:'Cash'|'GCash'|'Bank Transfer'|'Card';amount:number;date:string;}
 export interface POS {id:string;no:string;branch:BranchId;date:string;client:string;phone:string;vehicle:string;plate:string;concern:string;items:POSLine[];payments:POSPayment[];status:'Pending'|'Closed';parentId?:string;createdBy:string;createdAt:string;closedAt?:string;}
 export interface Count {id:string;branch:BranchId;userId:string;date:string;kind:'BOD'|'EOD';actual:number;expected:number;difference:number;notes:string;createdAt:string;denominations?:Record<string,number>;signature?:string;scope?:'Sales Cash'|'RF'|'RFP';}
-export interface Incident {id:string;branch:BranchId;userId:string;date:string;type:'Missed Opening'|'Missed Closing'|'Cash Discrepancy'|'Expense Explanation';detail:string;status:'Required'|'Submitted'|'Reviewed';explanation:string;createdAt:string;submittedAt?:string;entryId?:string;reviewedAt?:string;}
+export interface Incident {id:string;branch:BranchId;userId:string;date:string;type:'Missed Opening'|'Missed Closing'|'Missed Sales Turnover'|'Cash Discrepancy'|'Expense Explanation';detail:string;status:'Required'|'Submitted'|'Reviewed';explanation:string;createdAt:string;submittedAt?:string;entryId?:string;reviewedAt?:string;}
 export interface Turnover {id:string;branch:BranchId;date:string;amount:number;notes:string;signature?:string;createdBy:string;createdAt:string;kind?:'Sales'|'Funds';expected?:number;actual?:number;variance?:number;}
 export interface ChangeRequest {id:string;type:'Edit RFP'|'Change Branch';entryId:string;branch:BranchId;requestedBy:string;changes:Partial<FundEntry>;original?:Partial<FundEntry>;reason:string;status:'Pending'|'Approved'|'Rejected';createdAt:string;decidedBy?:string;}
 export interface Audit {id:string;at:string;by:string;action:string;detail:string;}
@@ -96,20 +96,26 @@ export function nextNumber(db:Database,branch:BranchId,type:'RF'|'RFP'|'POS'):st
 export function log(db:Database,by:string,action:string,detail:string):Database {return {...db,audit:[{id:uid(),at:new Date().toISOString(),by,action,detail},...db.audit].slice(0,1000)};}
 export const posTotal=(p:POS)=>p.items.reduce((v,i)=>v+i.qty*i.price,0);
 export const paidTotal=(p:POS)=>p.payments.reduce((v,i)=>v+i.amount,0);
-/** RFP-linked purchases supply authoritative part cost where part name and qty match a manual POS part line.
- * Matching replaces (rather than adds to) that manual cost to prevent double counting. */
+/** COGS uses each linked PB part purchase once. Matching product quantities replace manual POS costs,
+ * including partial matches and multiple PB suppliers/lines for one product. */
 export function posCostBreakdown(p:POS,db?:Database){
-  const lines=p.items.map(i=>({id:i.id,description:i.name,source:'POS entry',amount:i.qty*i.cost}));
-  if(!db)return lines;
-  const rfp=db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&e.linkedPosId===p.id);
-  const matched=new Set<string>();
-  const key=(s:string)=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
-  for(const part of rfp){
-    const manual=p.items.find(i=>i.type==='Part'&&!matched.has(i.id)&&key(i.name)===key(part.description)&&i.qty===(part.quantity||1));
-    if(manual){matched.add(manual.id);const row=lines.find(x=>x.id===manual.id);if(row){row.amount=part.amount;row.source=`RFP linked: ${part.no}`;}}
-    else lines.push({id:part.id,description:part.description,source:`RFP linked: ${part.no}`,amount:part.amount});
+ const lines=p.items.map(i=>({id:i.id,description:i.name,source:'POS entry',amount:i.qty*i.cost}));
+ if(!db)return lines;
+ const linked=db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&e.linkedPosId===p.id);
+ const key=(s:string)=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
+ const remaining=new Map(p.items.filter(i=>i.type==='Part').map(i=>[i.id,i.qty]));
+ for(const part of linked){
+  let qtyLeft=part.quantity||1;const unit=part.amount/qtyLeft;
+  for(const manual of p.items){
+   if(manual.type!=='Part'||key(manual.name)!==key(part.description)||qtyLeft<=0)continue;
+   const available=remaining.get(manual.id)||0;if(!available)continue;
+   const allocated=Math.min(available,qtyLeft),row=lines.find(x=>x.id===manual.id);
+   if(row){row.amount=Math.round((row.amount-allocated*manual.cost+allocated*unit)*100)/100;row.source=row.source==='POS entry'?`RFP linked: ${part.no} · ${part.payee}`:`${row.source}; ${part.no} · ${part.payee}`;}
+   remaining.set(manual.id,available-allocated);qtyLeft-=allocated;
   }
-  return lines;
+  if(qtyLeft>0)lines.push({id:part.id,description:part.description,source:`RFP linked: ${part.no} · ${part.payee}`,amount:Math.round(qtyLeft*unit*100)/100});
+ }
+ return lines;
 }
 export const posCOGS=(p:POS,db?:Database)=>posCostBreakdown(p,db).reduce((v,i)=>v+i.amount,0);
 export function posClosedDate(p:POS):string{if(!p.closedAt)return p.date;const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(p.closedAt));const val=(type:string)=>parts.find(x=>x.type===type)?.value||'';return `${val('year')}-${val('month')}-${val('day')}`;}
@@ -131,6 +137,22 @@ export function downloadFile(name:string,content:string,mime='text/csv;charset=u
 
 export function categoryTotals(entries:FundEntry[]) {return entries.filter(e=>e.fund==='RF'&&e.kind==='expense'&&e.status!=='Rejected').reduce<Record<string,number>>((result,e)=>{result[e.category]=(result[e.category]||0)+e.amount;return result;},{});}
 export function matchingPOS(db:Database,branch:BranchId,plate:string) {return db.pos.filter(p=>p.branch===branch&&normalizePlate(p.plate)===normalizePlate(plate)).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));}
+/** Frontend-only plate directory for POS suggestions. Prefer latest POS contact and PB car when no sale yet. */
+export function plateSuggestions(db:Database,branch:BranchId,term:string){
+ const query=normalizePlate(term);if(!query)return [];
+ const plates=new Set([...db.pos.filter(p=>p.branch===branch).map(p=>normalizePlate(p.plate)),...db.fundEntries.filter(e=>e.branch===branch&&e.fund==='RFP'&&e.kind==='expense').map(e=>normalizePlate(e.plate||''))]);
+ return [...plates].filter(p=>p&&p.includes(query)).sort((a,b)=>a.startsWith(query)===b.startsWith(query)?a.localeCompare(b):a.startsWith(query)?-1:1).slice(0,8).map(plate=>{
+  const visit=matchingPOS(db,branch,plate)[0];
+  const purchase=db.fundEntries.filter(e=>e.branch===branch&&e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&normalizePlate(e.plate||'')===plate).sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+  return {plate,car:(purchase&&!purchase.linkedPosId?purchase.car:undefined)||visit?.vehicle||purchase?.car||'',client:visit?.client||'',phone:visit?.phone||'',concern:visit?.concern||'',unlinkedParts:db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.branch===branch&&e.status!=='Rejected'&&!e.linkedPosId&&normalizePlate(e.plate||'')===plate).length};
+ });
+}
+/** Links only unassigned PB part-lines to a new Cashier POS (not to unrelated previous visits). */
+export function linkPartsOnSale(db:Database,pos:POS):Database{
+ const items=db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&!e.linkedPosId&&e.branch===pos.branch&&normalizePlate(e.plate||'')===normalizePlate(pos.plate));
+ if(!items.length)return db;
+ return {...db,fundEntries:db.fundEntries.map(e=>items.some(i=>i.id===e.id)?{...e,linkedPosId:pos.id}:e)};
+}
 /** Report accounting: opening is cumulative balance immediately before `from`.
  * Selected-period expenses and approved replenishments reconcile exactly to the reported closing.
  * The fund target is the configured starting/target fund balance. */

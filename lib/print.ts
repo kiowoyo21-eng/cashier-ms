@@ -219,9 +219,8 @@ export function printReconciliation(db:Database,branch:BranchId,from='',to=''){
  const rf=disbursementSummary(db,branch,'RF',from,to);
  const turnovers=db.turnovers.filter(t=>t.branch===branch&&reportDateMatch(t.date,from,to));
  const salesTurnover=turnovers.filter(t=>(t.kind||'Sales')==='Sales').reduce((a,t)=>a+(t.actual??t.amount),0);
- const fundTurnover=turnovers.filter(t=>t.kind==='Funds').reduce((a,t)=>a+(t.actual??t.amount),0);
  const discrepancy=counts.reduce((a,c)=>a+c.difference,0);
- const lines=[['Cash Sales (Closed POS)',cashSales],['Opening Revolving Fund',rf.opening],['RF Expenses',-rf.expenses],['RF Replenishments',rf.deposits],['RF Closing Balance',rf.remaining],['Friday Sales Turnovers',salesTurnover],['Friday Funds Turnovers',fundTurnover],['Recorded Cash Count Variances',discrepancy]];
+ const lines=[['Cash Sales (Closed POS)',cashSales],['Opening Revolving Fund',rf.opening],['RF Expenses',-rf.expenses],['RF Replenishments',rf.deposits],['RF Closing Balance',rf.remaining],['Daily Sales Turnover',salesTurnover],['Recorded Cash Count Variances',discrepancy]];
  const body=page(header('DAILY / PERIOD RECONCILIATION',range)+meta(name,range)+`<div class="metrics">${metric('Cash Sales',cashSales)}${metric('RF Movements',rf.deposits-rf.expenses)}${metric('Sales Turned Over',salesTurnover)}${metric('Cash Count Variance',discrepancy)}</div><div class="summary-section"><h2>Cash Movements & Reconciliation</h2><table class="compact-table">${lines.map(([label,val])=>tRow(String(label),fmt(Number(val)))).join('')}</table></div><div class="notice">Cash Sales, Revolving Fund, and RFP are separate accounts. Variance is the sum of recorded count differences, not an assumed settlement balance. Review cash counts against sales and turnover records.</div>${signatures(db,counts.at(-1)?.userId)}`);
  openPrint('Daily Cashier Reconciliation',body,db.settings.reportLogo?.data);
 }

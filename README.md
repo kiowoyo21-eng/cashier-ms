@@ -1,8 +1,22 @@
+# Version 6 — Guided Cashier POS & Auto PB Parts Matching
+
+**Current frontend update (Supabase intentionally disconnected):**
+
+- Cashier creates sale in three steps: **1. Plate + vehicle + customer (search/auto-fill)** → **2. Manual services/parts** → **3. Review COGS, with matching PB parts shown**. Save creates Pending POS, links unassigned PB parts by exact normalized uppercase plate and branch, then opens payments.
+- PB now records multiple parts/suppliers under **one purchase transaction number and total payment**; individual lines remain available for COGS and reports. Missing receipts can be added later in saved transaction details without rewriting expense amounts.
+- PB manual POS-link action removed. Already-linked parts are never linked again. Historical visits with same plate can populate customer/vehicle suggestions, but unassigned parts are linked to the **newly created** Cashier POS rather than to a random old visit.
+- BOD directs Cashier to count at 8:30 AM if incomplete, due by 9 AM; EOD count opens at 4 PM. **EOD and Daily Sales Turnover are due at 6 PM**. Sales only; no Funds Turnover. Missing required reports block entry.
+- Compatible with existing `underchargers-fund-management-demo-v1` browser-local records. **Always export JSON before deployment.**
+
+**Prototype limits:** Multi-user cross-device sync and secure role enforcement require Supabase in a later phase. Production build/browser E2E test may remain unverified until dependencies are installed.
+
+---
+
 # Underchargers Fund Management System PWA — Version 5 (Frontend Only)
 
 **Latest approved revisions (17 October 2026):**
 
-- **Friday turnover is for SALES ONLY.** Funds Turnover has been removed from user-facing workflows and printable report choices. Prior local demo history is preserved for reference.
+- **Daily turnover is for SALES ONLY.** Funds Turnover has been removed from user-facing workflows and printable report choices. Prior local demo history is preserved for reference.
 - **Cashier BOD:** From **8:30 AM Philippine time**, if the day's BOD has not been submitted and no mandatory incident report is outstanding, the PWA automatically directs the Cashier to the Opening Cash Count modal. The cashier must complete BOD before new entries. The **9:00 AM deadline**, missed-BOD mandatory report, **4:00 PM closing alert**, **6:00 PM closing deadline**, and next-login missed-closing incident behavior remain.
 - **Literal cash count:** Cashier inputs ONLY quantities by denomination. Total counted cash is computed automatically. No editable separate Actual Amount field and no Expected Balance / variance shown during entry. Expected and variance remain behind the scenes for audit and mandatory discrepancy reporting after submission.
 - **POS and PB vehicle:** Exactly **two vehicle entry controls** — searchable **Brand & Model** (select e.g. Toyota Vios by searching `Vios`) plus a separate **Year**. The local reference currently includes commonly used car models for frontend testing; it is not a complete automotive catalogue. The saved POS vehicle or PB parts-purchase Car is, for example, `Toyota Vios 2020`. If a POS with a single matching plate exists, the PB form automatically fills the car from that POS; for repeat visits the PB selects the exact POS. There is no separate Vehicle Master in the Cashier navigation.
@@ -33,7 +47,7 @@ The Disbursement form IS the request for reimbursement of spent fund money. It i
 
 # Version 3 — Reports-First CMS Frontend
 
-**Latest update:** Added specialized printable A4 landscape reports, date-range ledger balances, Closed-date Sales, RFP-linked COGS, denomination cash-count sheets, separate Friday Sales Turnover only (Funds Turnover removed) and configurable print logo/signatories. See `REVISION_STATUS_V3.md` for details and remaining limitations. **Supabase is not yet connected.**
+**Latest update:** Added specialized printable A4 landscape reports, date-range ledger balances, Closed-date Sales, RFP-linked COGS, denomination cash-count sheets, Daily Sales Turnover only (Funds Turnover removed) and configurable print logo/signatories. See `REVISION_STATUS_V3.md` for details and remaining limitations. **Supabase is not yet connected.**
 
 **Report previews:** Log in → Reports → choose report type → select branch (Admin must pick one) and date range → Preview Selected Report → Print / Save as PDF. To upload your official logo and signatory names, use Admin → Settings.
 
@@ -99,7 +113,7 @@ Use the login page account shortcut buttons to fill credentials. These are **ins
 - No real authentication, trusted role enforcement, server timestamps, server-side unique-number generation, background server notifications, or data recovery. Frontend permission checks are **not a security boundary**.
 - Receipt and signature data stored inline in browser storage; image/PDF uploads are limited to **1.6 MB** to reduce quota issues. For production, use private Supabase Storage and upload policies.
 - Initial RF ₱50,000 and RFP ₱120,000 per branch are **ILLUSTRATIVE TEST DATA, not official approved starting amounts**. The 11 Revolving Fund categories were approved and included in v2.
-- POS cash-accountability settlement, denomination-based cash count, VAT/BIR details, final Friday turnover deadlines, and reconciliation treatment need final finance approval.
+- POS cash-accountability settlement, denomination-based cash count, VAT/BIR details, daily Sales Turnover deadlines, and reconciliation treatment need final finance approval.
 - Installable PWA is not a substitute for proper multi-user sync. Backend migration must implement Supabase Auth, PostgreSQL, RLS, transactional ledger writes, immutable audit and correction events, managed receipts/signatures, scheduled deadline jobs/alerts, and robust concurrency handling.
 
 ## Test walkthrough
@@ -140,7 +154,7 @@ Finalize UX and unanswered policy decisions, then swap local repositories with S
 - RFP corrections now request part description, quantity, unit cost, total, supplier, plate and linked POS (or a separate branch change); Admin sees original/requested field values, with audit detail. Linked/pinned POS and plate cannot be changed through edit.
 - POS details now display linked transaction history across related extensions; new payments/COGS entry remains available while Pending.
 - Required explanation popup on cashier login, 9AM BOD and 4PM EOD alerts, discrepancy confirmation. Existing task-locking remains in effect until report submitted.
-- Friday Turnover requires Friday and signature; weekly amount is accumulated from closed cash sales since previous turnover; still subject to finance-team validation of final cut-off rules.
+- Daily Sales Turnover opens with EOD at 4 PM and is due by 6 PM every operating day; requires signature. Expected cash is based on Closed POS cash payments for the day.
 - Branch disbursement print preview uses **A4 landscape, up to 30 transactions per printed page** and includes category breakdown for RF. Receipts use a **separate print-ready view**. In the browser print dialog choose **Save as PDF** for independent files. Browser-based print previews are not server-generated PDFs. Images print directly; **original uploaded PDF receipts must be opened/printed separately** (not merged into the receipt packet). Signature lines are placeholders on generated reports and are not digitally routed for approval yet.
 - Admin fund approvals now offer a status filter; dashboard financial summaries open relevant modules, role-specific financial cards avoid cross-role RF/PB access.
 - Demo account password change, JSON backup/restore, sample-data reset, category editing, and branch fund baseline controls.

@@ -26,5 +26,5 @@ assert.equal(parsed.diagnostics.filter(x=>x.category===ts.DiagnosticCategory.Err
 assert(page.includes('timeMinutesPH()>=8*60+30'));
 assert(!page.includes('setCountActual(')&&!page.includes('EXPECTED CASH BALANCE'));
 assert(!page.includes('Friday Funds Turnover')&&!page.includes('turnoverFunds'));
-assert(page.includes('Brand &amp; Model')&&page.includes('Car · Brand &amp; Model')&&page.includes('label="Year"')); 
+assert(page.includes('Brand &amp; Model')&&page.includes('label="Year"')&&page.includes('vehicle-suggestion-list')); 
 console.log('PASS v5: monthly date filters, car autocomplete, sales-only turnover, 8:30 BOD, cash-count-only, post-disbursement RFP cutoff, Car+Branch print columns.');
