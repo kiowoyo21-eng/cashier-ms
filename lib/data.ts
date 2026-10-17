@@ -245,13 +245,14 @@ function verifiedUnitCodes(db:Database,productId:string):Set<string>{
 /** One receiving batch; scanner repeats never implicitly increase quantities. */
 export function submitStockReceipt(db:Database,lines:StockReceiptLine[],reference:string,notes:string,by:string,proof?:Receipt):Database {
  const actor=db.users.find(u=>u.id===by&&u.active);
- if(!actor||actor.role!=='cashier')throw new Error('Only the assigned Cashier may submit Stock In for verification.');
+ if(!actor||(actor.role!=='cashier'&&actor.role!=='admin'))throw new Error('Only Cashier or Admin may receive stock.');
+ const receivingBranch:BranchId=actor.role==='admin'?(db.inventory.find(p=>p.id===lines[0]?.productId)?.branch||actor.branch):actor.branch;
  if(!lines.length||!reference.trim())throw new Error('Add items and a delivery reference before submitting Stock In.');
  if(!proof||!proof.name||!proof.data)throw new Error('Attach a supporting delivery receipt or photo for Stock In verification.');
  const seen=new Set<string>(),allCodes=new Set<string>(),cleanLines:StockReceiptLine[]=[];
  for(const line of lines){
   const p=db.inventory.find(p=>p.id===line.productId&&!p.archivedAt);
-  if(!p||p.branch!==actor.branch)throw new Error('Stock In item must be registered for the Cashier branch.');
+  if(!p||p.branch!==receivingBranch)throw new Error('Every Stock In item must belong to the selected receiving branch.');
   if(seen.has(p.id))throw new Error('Duplicate item row: edit its physical quantity instead.');
   seen.add(p.id);
   if(!Number.isInteger(line.qty)||line.qty<=0)throw new Error('Physical received quantity must be a positive whole number.');
@@ -264,8 +265,11 @@ export function submitStockReceipt(db:Database,lines:StockReceiptLine[],referenc
   } else if(codes.length)throw new Error('Unit codes are only for serialized products.');
   cleanLines.push({productId:p.id,qty:line.qty,...(codes.length?{unitCodes:codes}:{})});
  }
- const receipt:StockReceipt={id:uid(),branch:actor.branch,reference:reference.trim(),lines:cleanLines,notes:notes.trim(),proof,status:'Pending',createdBy:by,createdAt:new Date().toISOString()};
- return log({...db,stockReceipts:[receipt,...(db.stockReceipts||[])]},by,'Stock In awaiting physical verification',`${actor.branch} · ${reference} · ${cleanLines.length} products`);
+ const confirmed=actor.role==='admin';
+ const now=new Date().toISOString();
+ const receipt:StockReceipt={id:uid(),branch:receivingBranch,reference:reference.trim(),lines:cleanLines,notes:notes.trim(),proof,status:confirmed?'Approved':'Pending',createdBy:by,createdAt:now,...(confirmed?{verifiedBy:by,verifiedAt:now,physicalCountConfirmed:true,verificationNotes:'Admin confirmed actual physical quantity and supporting delivery evidence on receipt.'}:{})};
+ const newMovements:StockMovement[]=confirmed?cleanLines.map(line=>({id:uid(),productId:line.productId,branch:receivingBranch,kind:'StockIn',qty:line.qty,unitCost:db.inventory.find(p=>p.id===line.productId)!.unitCost,by,at:now,notes:`Admin physically verified stock receipt ${receipt.reference}`,receiptId:receipt.id,...(line.unitCodes?.length?{unitCodes:line.unitCodes}:{})})):[];
+ return log({...db,stockReceipts:[receipt,...(db.stockReceipts||[])],stockMovements:[...newMovements,...db.stockMovements]},by,confirmed?'Admin Stock In physically verified and posted':'Stock In awaiting physical verification',`${receivingBranch} · ${reference} · ${cleanLines.length} products`);
 }
 /** Approval posts append-only Stock In movements atomically; a declined receipt changes no stock. */
 export function reviewStockReceipt(db:Database,id:string,approve:boolean,by:string,physicalCountConfirmed:boolean,notes=''):Database {
@@ -389,6 +393,32 @@ export function linkPartsOnSale(db:Database,pos:POS):Database{
  if(!items.length)return db;
  return {...db,fundEntries:db.fundEntries.map(e=>items.some(i=>i.id===e.id)?{...e,linkedPosId:pos.id}:e)};
 }
+
+/** Atomically posts consumed products to the correct open visit, creating a visible
+ * Draft only when no matching visit exists. Failed stock validation persists nothing. */
+export function assignConsumedStockToPOS(db:Database,branch:BranchId,rawPlate:string,lines:StockReceiptLine[],by:string,posId?:string):{db:Database;pos:POS;created:boolean}{
+ const actor=db.users.find(u=>u.id===by&&u.active),plate=normalizePlate(rawPlate);
+ if(!actor||actor.role!=='cashier'||actor.branch!==branch)throw new Error('Only the authorized branch Cashier may assign stock to a POS.');
+ if(!plate)throw new Error('Enter a valid plate number before confirming consumed inventory.');
+ let target=posId?db.pos.find(p=>p.id===posId):undefined;
+ if(posId&&(!target||target.branch!==branch||target.status!=='Pending'||normalizePlate(target.plate)!==plate))throw new Error('Selected POS is not a valid open visit for this plate and branch.');
+ let next=db,created=false;
+ if(!target){
+  const open=db.pos.filter(p=>p.branch===branch&&p.status==='Pending'&&normalizePlate(p.plate)===plate);
+  if(open.length>1)throw new Error('Multiple POS Drafts found. Choose the correct visit.');
+  target=open[0];
+  if(!target){
+   const old=matchingPOS(db,branch,plate)[0];
+   const rfp=db.fundEntries.find(e=>e.branch===branch&&e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&normalizePlate(e.plate||'')===plate&&e.car);
+   target={id:uid(),no:nextNumber(db,branch,'POS'),branch,date:todayPH(),plate,vehicle:old?.vehicle||rfp?.car||'',client:old?.client||'',phone:old?.phone||'',concern:'',items:[],payments:[],status:'Pending',createdBy:by,createdAt:new Date().toISOString()};
+   next=linkPartsOnSale({...db,pos:[target,...db.pos]},target);
+   created=true;
+  }
+ }
+ next=confirmStockOutBatch(next,target.id,lines,by);
+ return {db:log(next,by,created?'POS Draft auto-created from consumed stock':'Consumed stock attached to existing POS Draft',`${target.no} · ${plate} · ${lines.length} products`),pos:target,created};
+}
+
 /** Report accounting: opening is cumulative balance immediately before `from`.
  * Selected-period expenses and approved replenishments reconcile exactly to the reported closing.
  * The fund target is the configured starting/target fund balance. */

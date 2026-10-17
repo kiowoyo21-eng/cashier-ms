@@ -1,3 +1,12 @@
+# v8.7 — POS Draft visibility and Admin Stock In (frontend-only)
+
+- Cashier **Inventory → Consume / Use**: confirm the Stock Out, then open the corresponding **POS & Sales → Drafts** transaction automatically. When no matching open visit exists, create a new Pending POS Draft for the plate. When one open Draft exists, reuse it. When multiple open visits use the plate, require the Cashier to choose the correct visit. PB/RFP unlinked purchases for the plate are also attached to a newly created POS Draft.
+- **POS & Sales → Drafts** includes a counter and **Open Draft** action; existing Closed Sales remain read-only.
+- **Admin → Inventory → Receive Stock**: admin-entered delivery proof, physical quantity confirmation and approved Stock In are posted immediately to the selected branch, with receipt and ledger audit records. Cashier Stock In still remains **Pending Admin Verification**. Product registration alone does not create stock.
+- A failed consume (insufficient stock, wrong plate, wrong branch or duplicate/ambiguous visit) does **not** create a stray POS Draft or post a partial Stock Out.
+- Existing localStorage data key retained; export Admin → Settings → JSON backup before deploying. Service worker cache version advanced so users receive current PWA assets.
+- Logic regression suite: `npm run test:logic`. Full Next.js build / device E2E verification was **not** completed because npm registry name resolution failed.
+
 ## v8.6 Update
 
 See `REVISION_STATUS_V8_6.md` for the new Cashier Single/Bulk Scan receiving and consumption workflows, serialized tracking, and Admin physical Stock In verification. **No real Supabase backend/production approvals are connected yet.**
