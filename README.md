@@ -1,3 +1,7 @@
+## v8.6 Update
+
+See `REVISION_STATUS_V8_6.md` for the new Cashier Single/Bulk Scan receiving and consumption workflows, serialized tracking, and Admin physical Stock In verification. **No real Supabase backend/production approvals are connected yet.**
+
 > **v8.4 update:** Inventory now starts **EMPTY** with no sample products; Admin can use **Add Product** on Dashboard or Inventory. Untouched preloaded v8.3 demo products are cleaned from existing browser data automatically; used samples are archived to protect accounting history. All product registration and editing is Admin-only. Details in [v8.4 notes](REVISION_STATUS_V8_4.md).
 
 > **v8.3 update:** Only Admin can register/edit Inventory products and assign barcodes (branch selectable). Cashier retains scanning, branch Stock In, and POS Stock Out; PB remains RFP-only. No Super Admin role. See [revision notes](REVISION_STATUS_V8_3.md).

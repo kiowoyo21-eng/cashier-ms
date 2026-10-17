@@ -29,7 +29,10 @@ cdb=d.confirmStockOut(cdb,product.id,'both',1,'u-cashier');const cost=d.posCostT
 const part={id:'part-1',no:'UCM-RFP-00000099',fund:'RFP',kind:'expense',branch:'UCM',date:d.todayPH(),amount:1800,category:'Automotive Parts',payee:'Part Supplier',vat:'Non-VAT',voucher:'',receiptNo:'',tin:'',description:'Brake Pads',notes:'',status:'Pending',createdBy:'u-pb',createdAt:new Date().toISOString(),plate:'214UWI',quantity:1,unitCost:1800,linkedPosId:'both'};cdb.fundEntries.push(part);
 assert.equal(d.posCostTotals(draft,cdb).rfp,1800);assert.equal(d.posCOGS(draft,cdb),2110);
 // New-product and receiving unit movement
-const qty=d.stockAvailable(cdb,product);cdb=d.recordStockIn(cdb,product.id,5,'u-cashier','Delivery');assert.equal(d.stockAvailable(cdb,product),qty+5);
+const qty=d.stockAvailable(cdb,product);assert.throws(()=>d.recordStockIn(cdb,product.id,5,'u-cashier','Delivery'),/Admin verification/);
+cdb=d.submitStockReceipt(cdb,[{productId:product.id,qty:5}],'DELIVERY-0005','Physical receiving','u-cashier',{name:'delivery.jpg',data:'data:image/jpeg;base64,AAA'});
+assert.equal(d.stockAvailable(cdb,product),qty,'Pending Cashier Stock In must not credit inventory');
+cdb=d.reviewStockReceipt(cdb,cdb.stockReceipts[0].id,true,'u-admin',true,'Verified all five units physically');assert.equal(d.stockAvailable(cdb,product),qty+5);
 // Existing v7 data must be upgradeable without deleting records.
 const legacy=d.createSeed();delete legacy.inventory;delete legacy.stockMovements;delete legacy.stockRequests;assert(!legacy.inventory);
 const page=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');assert(page.includes('Save Draft Now'));assert(page.includes('Confirm & Lock Stock Out'));assert(page.includes('Request Return'));assert(page.includes('Inventory COGS'));assert(page.includes('PB/RFP COGS'));

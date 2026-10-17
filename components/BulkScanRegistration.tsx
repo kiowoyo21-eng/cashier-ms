@@ -4,9 +4,9 @@ import {Camera,Check,Plus,ScanBarcode,Trash2,X} from 'lucide-react';
 import BarcodeCamera from './BarcodeCamera';
 import {BRANCHES,type BranchId,type Database,type InventoryCategory,type NewInventoryProduct} from '@/lib/data';
 
-type Row={key:number;barcode:string;name:string;category:InventoryCategory;unit:string;unitCost:string;sellPrice:string;initialQty:string;reorderAt:string};
+type Row={key:number;barcode:string;name:string;category:InventoryCategory;unit:string;unitCost:string;sellPrice:string;initialQty:string;reorderAt:string;trackingMode:'quantity'|'serialized'};
 const clean=(v:string)=>v.toUpperCase().replace(/[^A-Z0-9]/g,'');
-const blank=(barcode:string,key:number):Row=>({key,barcode,name:'',category:'Automotive Parts & Products',unit:'Piece',unitCost:'',sellPrice:'',initialQty:'0',reorderAt:'5'});
+const blank=(barcode:string,key:number):Row=>({key,barcode,name:'',category:'Automotive Parts & Products',unit:'Piece',unitCost:'',sellPrice:'',initialQty:'0',reorderAt:'5',trackingMode:'quantity'});
 
 /** Scanner queue: one row per distinct barcode, no implicit quantity increment.
  * Bulk Save requires Admin and every product's complete details; nothing is
@@ -48,7 +48,7 @@ export default function BulkScanRegistration({db,initialBranch,onSave,onClose}:{
   if(rows.some(r=>!r.name.trim()||!r.unit.trim()||!r.unitCost||Number(r.unitCost)<=0||Number(r.sellPrice)<0||Number(r.initialQty)<0||!Number.isInteger(Number(r.initialQty))||Number(r.reorderAt)<0||!Number.isInteger(Number(r.reorderAt)))){
    setMessage('Complete each product name, unit, valid unit cost, price, and stock quantity before saving.');return;
   }
-  const payload:NewInventoryProduct[]=rows.map(r=>({branch,barcode:r.barcode,name:r.name.trim(),category:r.category,unit:r.unit.trim(),unitCost:Number(r.unitCost),sellPrice:Number(r.sellPrice||0),initialQty:Number(r.initialQty),reorderAt:Number(r.reorderAt)}));
+  const payload:NewInventoryProduct[]=rows.map(r=>({branch,barcode:r.barcode,name:r.name.trim(),category:r.category,unit:r.unit.trim(),unitCost:Number(r.unitCost),sellPrice:Number(r.sellPrice||0),initialQty:0,reorderAt:Number(r.reorderAt),trackingMode:r.trackingMode}));
   if(onSave(payload)){
    setMessage(`Successfully registered ${payload.length} new products.`);setRows([]);seen.current.clear();setBarcodeInput('');setCamera(false);
   }
@@ -69,10 +69,10 @@ export default function BulkScanRegistration({db,initialBranch,onSave,onClose}:{
      <div className="bulk-scan-fields">
       <label className="field"><span>Product Name</span><input value={r.name} onChange={e=>change(r.key,'name',e.target.value)} placeholder="Enter product name" required/></label>
       <label className="field"><span>Category</span><select value={r.category} onChange={e=>change(r.key,'category',e.target.value as InventoryCategory)}><option>Automotive Parts & Products</option><option>Shop Supplies</option></select></label>
-      <label className="field"><span>Unit</span><input value={r.unit} onChange={e=>change(r.key,'unit',e.target.value)} required/></label>
+      <label className="field"><span>Tracking</span><select value={r.trackingMode} onChange={e=>change(r.key,'trackingMode',e.target.value as 'quantity'|'serialized')}><option value="quantity">Quantity count</option><option value="serialized">Unique barcode per unit</option></select></label><label className="field"><span>Unit</span><input value={r.unit} onChange={e=>change(r.key,'unit',e.target.value)} required/></label>
       <label className="field"><span>Cost / Unit (₱)</span><input value={r.unitCost} type="number" step="0.01" min="0.01" onChange={e=>change(r.key,'unitCost',e.target.value)} required/></label>
       <label className="field"><span>Selling Price (₱)</span><input value={r.sellPrice} type="number" step="0.01" min="0" onChange={e=>change(r.key,'sellPrice',e.target.value)}/></label>
-      <label className="field"><span>Initial Qty</span><input value={r.initialQty} type="number" step="1" min="0" onChange={e=>change(r.key,'initialQty',e.target.value)} required/></label>
+      <div className="form-note">Available stock starts at zero; Cashier submits Stock In for Admin physical verification.</div>
       <label className="field"><span>Low Stock Alert</span><input value={r.reorderAt} type="number" step="1" min="0" onChange={e=>change(r.key,'reorderAt',e.target.value)} required/></label>
      </div></div>)}</div>:<p className="bulk-scan-empty">No barcodes yet. Scan products using a USB/Bluetooth reader, type a barcode and press Enter, or open Camera Bulk Scan on a supported device.</p>}
    <div className="bulk-scan-actions"><button type="button" className="button button-secondary" onClick={onClose}>Close</button><button className="button button-primary" type="submit" disabled={!rows.length}><Check size={16}/> Register All ({rows.length})</button></div>

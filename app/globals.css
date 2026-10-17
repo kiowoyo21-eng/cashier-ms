@@ -120,3 +120,15 @@
 .bulk-scan-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 @media(max-width:1180px){.bulk-scan-controls{grid-template-columns:1fr 1fr}.bulk-scan-fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.inventory-admin-actions{width:100%}.inventory-admin-actions .button{flex:1;white-space:nowrap}.bulk-scan-panel{margin:8px 12px;padding:11px}.bulk-scan-controls{grid-template-columns:1fr 1fr}.bulk-scan-controls .field{grid-column:span 2}.bulk-scan-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.bulk-scan-fields .field:first-child,.bulk-scan-fields .field:nth-child(2){grid-column:span 2}.bulk-scan-rows{max-height:520px}.bulk-scan-actions .button{flex:1}}
+/* v8.6 — compact dual-mode Cashier scanning */
+.scan-batch-panel{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:10px 0 18px;background:#fff}
+.scan-batch-head,.scan-batch-actions,.scan-batch-controls,.scan-batch-total{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.scan-batch-head h3{display:flex;align-items:center;gap:8px;margin:0}
+.scan-batch-head p,.scan-batch-feedback,.scan-batch-total small{font-size:12px;color:#64748b;margin:4px 0}
+.scan-batch-controls{justify-content:flex-start;margin:12px 0}.scan-batch-controls>.field{flex:1;min-width:200px}
+.scan-batch-row{display:grid;grid-template-columns:minmax(180px,1fr) 90px auto;gap:9px;align-items:end;border:1px solid #ececec;border-radius:8px;padding:11px;margin:9px 0}
+.scan-batch-row>div:first-child small{display:block;color:#64748b;font-size:11px;margin-top:4px}.scan-batch-row .serialized-input{grid-column:1 / -1}
+.scan-batch-row .serialized-input textarea{width:100%}.scan-batch-detail{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;padding:10px;background:#f8fafc;border-radius:8px;margin-bottom:10px}
+.scan-batch-matches{display:grid;gap:4px;margin-bottom:9px}.scan-batch-matches button{text-align:left;border:1px solid #ddd;border-radius:7px;background:#fff;padding:8px}.scan-batch-matches small{display:block;color:#64748b}.scan-batch-total{padding:10px;background:#fff9db;border-radius:8px;margin:12px 0}
+.scan-batch-actions{justify-content:flex-end;margin-top:10px}
+@media(max-width:640px){.scan-batch-panel{padding:10px}.scan-batch-row{grid-template-columns:minmax(0,1fr) 80px 46px}.scan-batch-row>div:first-child{overflow-wrap:anywhere}.scan-batch-controls>.field{width:100%}.scan-batch-actions .button{flex:1}}

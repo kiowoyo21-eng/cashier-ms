@@ -43,9 +43,12 @@ export interface FundEntry {
   accountingBy?:string;accountingAt?:string;presidentBy?:string;presidentAt?:string;receivedAt?:string;
 }
 export type InventoryCategory = 'Automotive Parts & Products'|'Shop Supplies';
-export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;sellPrice:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;updatedAt?:string;updatedBy?:string;archivedAt?:string;}
+export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;sellPrice:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;updatedAt?:string;updatedBy?:string;archivedAt?:string;trackingMode?:'quantity'|'serialized';}
 /** Append-only movement ledger. StockOut and StockReturn records must never be mutated. */
-export interface StockMovement {id:string;productId:string;branch:BranchId;kind:'StockIn'|'StockOut'|'StockReturn';qty:number;unitCost:number;posId?:string;sourceStockOutId?:string;by:string;at:string;notes?:string;}
+export interface StockMovement {id:string;productId:string;branch:BranchId;kind:'StockIn'|'StockOut'|'StockReturn';qty:number;unitCost:number;posId?:string;sourceStockOutId?:string;by:string;at:string;notes?:string;unitCodes?:string[];receiptId?:string;}
+export interface StockReceiptLine {productId:string;qty:number;unitCodes?:string[];}
+/** A pending Stock In does not alter available inventory. Admin verifies physical count first. */
+export interface StockReceipt {id:string;branch:BranchId;reference:string;lines:StockReceiptLine[];notes:string;proof?:Receipt;status:'Pending'|'Approved'|'Rejected';createdBy:string;createdAt:string;verifiedBy?:string;verifiedAt?:string;verificationNotes?:string;physicalCountConfirmed?:boolean;}
 export interface StockCorrection {id:string;stockOutId:string;branch:BranchId;posId:string;qty:number;reason:string;requestedBy:string;requestedAt:string;status:'Pending'|'Approved'|'Rejected';decidedBy?:string;decidedAt?:string;decisionNotes?:string;}
 export interface POSLine {id:string;type:'Service'|'Part';name:string;qty:number;price:number;cost:number;supplier?:string;receiptNo?:string;proof?:Receipt;}
 export interface POSPayment {id:string;mode:'Cash'|'GCash'|'Bank Transfer'|'Card';amount:number;date:string;}
@@ -56,7 +59,7 @@ export interface Turnover {id:string;branch:BranchId;date:string;amount:number;n
 export interface ChangeRequest {id:string;type:'Edit RFP'|'Change Branch';entryId:string;branch:BranchId;requestedBy:string;changes:Partial<FundEntry>;original?:Partial<FundEntry>;reason:string;status:'Pending'|'Approved'|'Rejected';createdAt:string;decidedBy?:string;}
 export interface Audit {id:string;at:string;by:string;action:string;detail:string;}
 export interface Database {
-  users:User[];fundEntries:FundEntry[];pos:POS[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
+  users:User[];fundEntries:FundEntry[];pos:POS[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];stockReceipts:StockReceipt[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
   settings:{rfBase:Record<BranchId,number>;rfpBase:Record<BranchId,number>;categories:string[];signatories?:{checked:string;approved:string};reportLogo?:Receipt};
 }
 export const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ID-${Date.now()}-${Math.random().toString(36).slice(2,7)}`);
@@ -80,7 +83,7 @@ export function createSeed():Database {
   const rf2 = entry('UCQC-Rotating Fund-00000001','UCQC',680,'Office Mart','Office Supplies','u-admin','RF');
   const rfp = entry('UCM-RFP-00000001','UCM',3800,'Auto Parts Supplier','Automotive Parts','u-pb','RFP');rfp.plate='ABC1234';rfp.car='Toyota Vios 2020';rfp.quantity=2;rfp.unitCost=1900;
   const pos:POS[]=[{id:uid(),no:'UCM-POS-00000001',branch:'UCM',date,client:'Sample Customer',phone:'',vehicle:'Toyota Vios 2020',plate:'ABC1234',concern:'Routine service',items:[{id:uid(),type:'Service',name:'Oil Change',qty:1,price:1800,cost:450},{id:uid(),type:'Part',name:'Engine Oil',qty:1,price:2200,cost:1250}],payments:[{id:uid(),mode:'Cash',amount:4000,date}],status:'Closed',createdBy:'u-cashier',createdAt:new Date().toISOString(),closedAt:new Date().toISOString()}];
-  return {users,fundEntries:[rf,rf2,rfp],pos,inventory:[],stockMovements:[],stockRequests:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Demo initialized',detail:'Sample data created; amounts are illustrative only'}],settings:{rfBase:base(),rfpBase:rfpBase(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
+  return {users,fundEntries:[rf,rf2,rfp],pos,inventory:[],stockMovements:[],stockRequests:[],stockReceipts:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Demo initialized',detail:'Sample data created; amounts are illustrative only'}],settings:{rfBase:base(),rfpBase:rfpBase(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
 }
 /** v8.4 migration: only discard untouched auto-created v8.0–v8.3 sample products.
  * Never delete an Admin-created product, an edited sample, or any product
@@ -114,7 +117,7 @@ export function removeUntouchedDemoProducts(db:Database):Database {
 }
 
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
-export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];return removeUntouchedDemoProducts(d);}}}catch{}return createSeed();}
+export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];return removeUntouchedDemoProducts(d);}}}catch{}return createSeed();}
 export function storeDB(db:Database):boolean {try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));return true;}catch{return false;}}
 export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
@@ -165,7 +168,7 @@ export function pendingReturnQty(db:Database,stockOutId:string):number {
 }
 /** Pure, checked ledger operations make duplicate scans and unauthorized stock changes testable. */
 /** Demo data permission guard. Production must enforce this in Supabase RLS/server APIs too. */
-export type ProductDetails = Pick<InventoryProduct,'barcode'|'name'|'category'|'unit'|'sellPrice'|'unitCost'|'reorderAt'>;
+export type ProductDetails = Pick<InventoryProduct,'barcode'|'name'|'category'|'unit'|'sellPrice'|'unitCost'|'reorderAt'|'trackingMode'>;
 export type NewInventoryProduct = ProductDetails & {branch:BranchId;initialQty:number};
 function requireAdmin(db:Database,by:string):User {
  const actor=db.users.find(u=>u.id===by&&u.active);
@@ -177,13 +180,14 @@ function cleanProductDetails(input:ProductDetails):ProductDetails {
  const name=input.name.trim(),unit=input.unit.trim()||'Piece';
  if(!barcode||!name||!Number.isFinite(input.unitCost)||input.unitCost<=0||!Number.isFinite(input.sellPrice)||input.sellPrice<0||!Number.isInteger(input.reorderAt)||input.reorderAt<0)throw new Error('Valid barcode, product name, prices and alert quantity are required.');
  if(!['Automotive Parts & Products','Shop Supplies'].includes(input.category))throw new Error('Invalid product category.');
- return {barcode,name,unit,category:input.category,unitCost:input.unitCost,sellPrice:input.sellPrice,reorderAt:input.reorderAt};
+ return {barcode,name,unit,category:input.category,unitCost:input.unitCost,sellPrice:input.sellPrice,reorderAt:input.reorderAt,trackingMode:input.trackingMode||'quantity'};
 }
 export function registerInventoryProduct(db:Database,input:NewInventoryProduct,by:string):Database {
  requireAdmin(db,by);
  if(!BRANCHES.some(b=>b.id===input.branch))throw new Error('Choose a valid branch.');
  const details=cleanProductDetails(input);
  if(!Number.isInteger(input.initialQty)||input.initialQty<0)throw new Error('Initial quantity must be a nonnegative whole number.');
+ if((details.trackingMode||'quantity')==='serialized'&&input.initialQty>0)throw new Error('Serialized products must be received with individual unit codes in a verified Stock In.');
  if(db.inventory.some(p=>p.branch===input.branch&&p.barcode===details.barcode))throw new Error('Barcode already registered in this branch.');
  const product:InventoryProduct={...details,id:uid(),branch:input.branch,openingQty:0,createdAt:new Date().toISOString()};
  const next=log({...db,inventory:[product,...db.inventory]},by,'Inventory product created',`${details.barcode} · ${details.name} · ${input.branch}`);
@@ -210,9 +214,10 @@ export function updateInventoryProduct(db:Database,productId:string,input:Produc
  requireAdmin(db,by);
  const old=db.inventory.find(p=>p.id===productId);
  if(!old)throw new Error('Inventory product not found.');
+ if((old.trackingMode||'quantity')!==(input.trackingMode||'quantity')&&(db.stockMovements.some(m=>m.productId===old.id)||(db.stockReceipts||[]).some(r=>r.lines.some(l=>l.productId===old.id))))throw new Error('Tracking mode is locked after the first inventory movement or receipt.');
  const details=cleanProductDetails(input);
  if(db.inventory.some(p=>p.id!==productId&&p.branch===old.branch&&p.barcode===details.barcode))throw new Error('Barcode already registered in this branch.');
- const fields:(keyof ProductDetails)[]=['barcode','name','category','unit','unitCost','sellPrice','reorderAt'];
+ const fields:(keyof ProductDetails)[]=['barcode','name','category','unit','unitCost','sellPrice','reorderAt','trackingMode'];
  const changes=fields.filter(f=>old[f]!==details[f]).map(f=>`${f}: ${old[f]} → ${details[f]}`);
  if(!changes.length)return db;
  const next={...db,inventory:db.inventory.map(p=>p.id===productId?{...p,...details,updatedAt:new Date().toISOString(),updatedBy:by}:p)};
@@ -220,17 +225,81 @@ export function updateInventoryProduct(db:Database,productId:string,input:Produc
 }
 export function recordStockIn(db:Database,productId:string,qty:number,by:string,notes=''):Database {
  const product=db.inventory.find(p=>p.id===productId);
+ if(product?.trackingMode==='serialized')throw new Error('Serialized units require individually verified barcode Stock In.');
  if(!product||product.archivedAt||!Number.isInteger(qty)||qty<=0)throw new Error('Invalid/archived product or positive quantity required.');
  const actor=db.users.find(u=>u.id===by&&u.active);
- if(!actor||(actor.role!=='admin'&&(actor.role!=='cashier'||actor.branch!==product.branch)))throw new Error('No Stock In access to this branch.');
+ if(!actor||actor.role!=='admin')throw new Error('No Stock In access: Cashier Stock In requires Admin verification.');
  const movement:StockMovement={id:uid(),productId,branch:product.branch,kind:'StockIn',qty,unitCost:product.unitCost,by,at:new Date().toISOString(),notes};
  return log({...db,stockMovements:[movement,...db.stockMovements]},by,'Stock In',`${product.name} · ${product.branch} · +${qty}`);
 }
-export function confirmStockOut(db:Database,productId:string,posId:string,qty:number,by:string):Database {
+const normUnitCode=(v:string)=>v.trim().toUpperCase().replace(/\s+/g,'');
+function verifiedUnitCodes(db:Database,productId:string):Set<string>{
+ const live=new Set<string>();
+ for(const movement of [...db.stockMovements].reverse()){
+  if(movement.productId!==productId)continue;
+  if(movement.kind==='StockIn'||movement.kind==='StockReturn')for(const c of movement.unitCodes||[])live.add(c);
+  if(movement.kind==='StockOut')for(const c of movement.unitCodes||[])live.delete(c);
+ }
+ return live;
+}
+/** One receiving batch; scanner repeats never implicitly increase quantities. */
+export function submitStockReceipt(db:Database,lines:StockReceiptLine[],reference:string,notes:string,by:string,proof?:Receipt):Database {
+ const actor=db.users.find(u=>u.id===by&&u.active);
+ if(!actor||actor.role!=='cashier')throw new Error('Only the assigned Cashier may submit Stock In for verification.');
+ if(!lines.length||!reference.trim())throw new Error('Add items and a delivery reference before submitting Stock In.');
+ if(!proof||!proof.name||!proof.data)throw new Error('Attach a supporting delivery receipt or photo for Stock In verification.');
+ const seen=new Set<string>(),allCodes=new Set<string>(),cleanLines:StockReceiptLine[]=[];
+ for(const line of lines){
+  const p=db.inventory.find(p=>p.id===line.productId&&!p.archivedAt);
+  if(!p||p.branch!==actor.branch)throw new Error('Stock In item must be registered for the Cashier branch.');
+  if(seen.has(p.id))throw new Error('Duplicate item row: edit its physical quantity instead.');
+  seen.add(p.id);
+  if(!Number.isInteger(line.qty)||line.qty<=0)throw new Error('Physical received quantity must be a positive whole number.');
+  const codes=(line.unitCodes||[]).map(normUnitCode).filter(Boolean);
+  if(p.trackingMode==='serialized'){
+   if(codes.length!==line.qty)throw new Error(`${p.name}: enter one unique unit barcode per received item.`);
+   const occupied=new Set((db.stockMovements||[]).flatMap(m=>m.unitCodes||[]));
+   for(const r of db.stockReceipts||[])if(r.status==='Pending'||r.status==='Approved')for(const x of r.lines)for(const c of x.unitCodes||[])occupied.add(c);
+   for(const c of codes){if(allCodes.has(c)||occupied.has(c))throw new Error(`Duplicate unit barcode: ${c}`);allCodes.add(c);}
+  } else if(codes.length)throw new Error('Unit codes are only for serialized products.');
+  cleanLines.push({productId:p.id,qty:line.qty,...(codes.length?{unitCodes:codes}:{})});
+ }
+ const receipt:StockReceipt={id:uid(),branch:actor.branch,reference:reference.trim(),lines:cleanLines,notes:notes.trim(),proof,status:'Pending',createdBy:by,createdAt:new Date().toISOString()};
+ return log({...db,stockReceipts:[receipt,...(db.stockReceipts||[])]},by,'Stock In awaiting physical verification',`${actor.branch} · ${reference} · ${cleanLines.length} products`);
+}
+/** Approval posts append-only Stock In movements atomically; a declined receipt changes no stock. */
+export function reviewStockReceipt(db:Database,id:string,approve:boolean,by:string,physicalCountConfirmed:boolean,notes=''):Database {
+ const actor=db.users.find(u=>u.id===by&&u.active),receipt=(db.stockReceipts||[]).find(r=>r.id===id);
+ if(!actor||actor.role!=='admin'||!receipt||receipt.status!=='Pending')throw new Error('Only Admin can review a pending Stock In.');
+ if(actor.id===receipt.createdBy)throw new Error('The Stock In preparer cannot verify their own receipt.');
+ if(approve&&!physicalCountConfirmed)throw new Error('Admin must confirm physical count and delivery evidence first.');
+ if(approve&&!receipt.proof&&!receipt.reference.trim())throw new Error('Delivery evidence/reference required.');
+ for(const line of receipt.lines)if(approve&&!db.inventory.some(p=>p.id===line.productId&&!p.archivedAt&&p.branch===receipt.branch))throw new Error('Product or branch has changed. Reconcile before approving.');
+ const at=new Date().toISOString();
+ const stockMovements=approve?[...receipt.lines.map(x=>{const product=db.inventory.find(p=>p.id===x.productId)!;return {id:uid(),productId:x.productId,branch:receipt.branch,kind:'StockIn' as const,qty:x.qty,unitCost:product.unitCost,by,at,notes:`Verified Stock In: ${receipt.reference}`,receiptId:receipt.id,unitCodes:x.unitCodes};}),...db.stockMovements]:db.stockMovements;
+ const stockReceipts=db.stockReceipts.map(r=>r.id===id?{...r,status:approve?'Approved' as const:'Rejected' as const,verifiedBy:by,verifiedAt:at,verificationNotes:notes,physicalCountConfirmed:approve?true:false}:r);
+ return log({...db,stockMovements,stockReceipts},by,approve?'Physical Stock In approved':'Stock In rejected',`${receipt.branch} · ${receipt.reference} · ${notes}`);
+}
+/** Multiple confirmed consumed products post together (all or nothing). */
+export function confirmStockOutBatch(db:Database,posId:string,lines:StockReceiptLine[],by:string):Database {
+ if(!lines.length)throw new Error('Scan at least one product before Stock Out.');
+ const seen=new Set<string>();
+ let next=db;
+ for(const line of lines){
+  if(seen.has(line.productId))throw new Error('Duplicate product. Edit quantity instead.');
+  seen.add(line.productId);
+  next=confirmStockOut(next,line.productId,posId,line.qty,by,line.unitCodes);
+ }
+ return next;
+}
+export function confirmStockOut(db:Database,productId:string,posId:string,qty:number,by:string,unitCodes?:string[]):Database {
  const product=db.inventory.find(p=>p.id===productId),pos=db.pos.find(p=>p.id===posId),actor=db.users.find(u=>u.id===by&&u.active);
  if(!actor||actor.role!=='cashier'||!product||product.archivedAt||!pos||actor.branch!==pos.branch||product.branch!==pos.branch||pos.status!=='Pending')throw new Error('Stock Out requires an open POS and authorized Cashier in the same branch.');
  if(!Number.isInteger(qty)||qty<=0||stockAvailable(db,product)<qty)throw new Error('Insufficient stock or invalid quantity.');
- const movement:StockMovement={id:uid(),productId,branch:product.branch,kind:'StockOut',qty,unitCost:product.unitCost,posId,by,at:new Date().toISOString()};
+ const codes=(unitCodes||[]).map(normUnitCode).filter(Boolean);
+ if(product.trackingMode==='serialized'){const live=verifiedUnitCodes(db,product.id);if(codes.length!==qty||new Set(codes).size!==qty||!codes.every(c=>live.has(c)))throw new Error('Scan unique, available unit barcodes for every serialized item.');}
+ else if(codes.length)throw new Error('Do not enter unit codes for regular products.');
+ const movement:StockMovement={id:uid(),productId,branch:product.branch,kind:'StockOut',qty,unitCost:product.unitCost,posId,by,at:new Date().toISOString(),...(codes.length?{unitCodes:codes}:{})};
  return log({...db,stockMovements:[movement,...db.stockMovements]},by,'Locked Stock Out',`${product.name} · ${pos.no} · -${qty} · ${pesos(qty*product.unitCost)}`);
 }
 export function requestStockReturn(db:Database,stockOutId:string,qty:number,reason:string,by:string):Database {
@@ -246,7 +315,9 @@ export function decideStockReturn(db:Database,requestId:string,approve:boolean,b
  if(!req||req.status!=='Pending'||!actor||actor.role!=='admin')throw new Error('Only Admin can decide a pending return.');
  if(approve&&req.qty>returnableQty(db,req.stockOutId))throw new Error('Return exceeds remaining Stock Out quantity.');
  const original=db.stockMovements.find(m=>m.id===req.stockOutId)!;
- const movement:StockMovement={id:uid(),productId:original.productId,branch:original.branch,kind:'StockReturn',qty:req.qty,unitCost:original.unitCost,sourceStockOutId:original.id,posId:original.posId,by,at:new Date().toISOString(),notes:`Approved request ${req.id}: ${req.reason}`};
+ const already=new Set(db.stockMovements.filter(m=>m.kind==='StockReturn'&&m.sourceStockOutId===original.id).flatMap(m=>m.unitCodes||[]));
+ const returnedCodes=original.unitCodes?.filter(c=>!already.has(c)).slice(0,req.qty);
+ const movement:StockMovement={id:uid(),productId:original.productId,branch:original.branch,kind:'StockReturn',qty:req.qty,unitCost:original.unitCost,sourceStockOutId:original.id,posId:original.posId,by,at:new Date().toISOString(),notes:`Approved request ${req.id}: ${req.reason}`,...(returnedCodes?.length?{unitCodes:returnedCodes}:{})};
  const stockRequests=db.stockRequests.map(r=>r.id===requestId?{...r,status:approve?'Approved' as const:'Rejected' as const,decidedBy:by,decidedAt:new Date().toISOString(),decisionNotes:notes}:r);
  return log({...db,stockRequests,stockMovements:approve?[movement,...db.stockMovements]:db.stockMovements},by,approve?'Stock return approved':'Stock return rejected',`${req.stockOutId} · ${req.qty} · ${notes}`);
 }
