@@ -219,7 +219,7 @@ export default function Home(){
  function saveNewProduct(ev:React.FormEvent){
   ev.preventDefault();if(!user||user.role!=='admin'||locked)return;
   try{
-   const next=registerInventoryProduct(db,{branch:newProduct.branch,barcode:newProduct.barcode,name:newProduct.name,category:newProduct.category,unit:newProduct.unit,unitCost:Number(newProduct.unitCost),sellPrice:Number(newProduct.sellPrice||0),reorderAt:Number(newProduct.reorderAt),trackingMode:newProduct.trackingMode,initialQty:0,trackingMode:newProduct.trackingMode},user.id);
+   const next=registerInventoryProduct(db,{branch:newProduct.branch,barcode:newProduct.barcode,name:newProduct.name,category:newProduct.category,unit:newProduct.unit,unitCost:Number(newProduct.unitCost),sellPrice:Number(newProduct.sellPrice||0),reorderAt:Number(newProduct.reorderAt),trackingMode:newProduct.trackingMode,initialQty:0},user.id);
    update(()=>next);setDialog(null);notify(`Product registered for ${BRANCH_NAME(newProduct.branch)}.`);
   }catch(err){notify((err as Error).message)}
  }
