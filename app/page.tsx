@@ -158,7 +158,7 @@ export default function Home(){
   });notify(step==='receive'?'Fund received and credited to its originating branch.':'Demo stage recorded. External system integration still pending.');
  }
  function changeStatus(item:FundEntry,status:'Approved'|'Rejected'|'Report Required',note=''){if(!user||user.role!=='admin')return;if(item.kind==='replenishment'){notify('Replenishment follows Accounting → President → Funds Received, not direct Admin expense approval.');return;}if(item.createdBy===user.id){notify('You cannot approve your own expense.');return;}
-  if(status==='Report Required'&&(item.kind==='replenishment'||db.users.find(u=>u.id===item.createdBy)?.role!=='cashier')){notify('Explanation reports can only be requested from Cashier expense creators.');return;}
+  if(status==='Report Required'&&db.users.find(u=>u.id===item.createdBy)?.role!=='cashier'){notify('Explanation reports can only be requested from Cashier expense creators.');return;}
   if(status==='Approved'&&item.status==='Report Required'){notify('Wait for Cashier explanation first.');return;}
   update(old=>{let next:Database={...old,fundEntries:old.fundEntries.map(e=>e.id===item.id?{...e,status,decisionBy:user.id,decisionAt:new Date().toISOString(),decisionNote:note}:e)};
    if(status==='Report Required'){const assigned=old.users.find(u=>u.id===item.createdBy);if(assigned&&assigned.role==='cashier')next=makeIncident(next,assigned,todayPH(),'Expense Explanation',`Admin requires an explanation for ${item.no} (${pesos(item.amount)}).`,item.id);
