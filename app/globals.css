@@ -88,3 +88,7 @@
 
 /* Version 8.2: clearly accessible barcode camera controls across inventory flows */
 .inventory-scan-btn{min-height:37px;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}.inventory-scan-panel{padding:0 20px 12px;max-width:550px}.inventory-scan-help{display:flex;align-items:flex-start;gap:7px;font-size:11px;line-height:1.5;color:#777d86;margin:0;padding:0 21px 12px}.inventory-scan-help svg{flex-shrink:0;margin-top:2px}.stack-fields>.inventory-scan-btn{align-self:flex-start}@media(max-width:700px){.filters>.inventory-scan-btn{flex:1 1 auto}.inventory-scan-panel{padding:0 13px 13px;max-width:none}.inventory-scan-help{padding:0 13px 12px}}
+
+/* v8.3: Compact, responsive inventory permissions actions. */
+.inventory-row-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:120px}
+.inventory-row-actions .button{white-space:nowrap}

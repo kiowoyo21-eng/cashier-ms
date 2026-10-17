@@ -43,7 +43,7 @@ export interface FundEntry {
   accountingBy?:string;accountingAt?:string;presidentBy?:string;presidentAt?:string;receivedAt?:string;
 }
 export type InventoryCategory = 'Automotive Parts & Products'|'Shop Supplies';
-export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;sellPrice:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;}
+export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;sellPrice:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;updatedAt?:string;updatedBy?:string;}
 /** Append-only movement ledger. StockOut and StockReturn records must never be mutated. */
 export interface StockMovement {id:string;productId:string;branch:BranchId;kind:'StockIn'|'StockOut'|'StockReturn';qty:number;unitCost:number;posId?:string;sourceStockOutId?:string;by:string;at:string;notes?:string;}
 export interface StockCorrection {id:string;stockOutId:string;branch:BranchId;posId:string;qty:number;reason:string;requestedBy:string;requestedAt:string;status:'Pending'|'Approved'|'Rejected';decidedBy?:string;decidedAt?:string;decisionNotes?:string;}
@@ -138,6 +138,43 @@ export function pendingReturnQty(db:Database,stockOutId:string):number {
  return (db.stockRequests||[]).filter(r=>r.stockOutId===stockOutId&&r.status==='Pending').reduce((n,r)=>n+r.qty,0);
 }
 /** Pure, checked ledger operations make duplicate scans and unauthorized stock changes testable. */
+/** Demo data permission guard. Production must enforce this in Supabase RLS/server APIs too. */
+export type ProductDetails = Pick<InventoryProduct,'barcode'|'name'|'category'|'unit'|'sellPrice'|'unitCost'|'reorderAt'>;
+export type NewInventoryProduct = ProductDetails & {branch:BranchId;initialQty:number};
+function requireAdmin(db:Database,by:string):User {
+ const actor=db.users.find(u=>u.id===by&&u.active);
+ if(!actor||actor.role!=='admin')throw new Error('Only Admin can register or update inventory products.');
+ return actor;
+}
+function cleanProductDetails(input:ProductDetails):ProductDetails {
+ const barcode=input.barcode.toUpperCase().replace(/[^A-Z0-9]/g,'');
+ const name=input.name.trim(),unit=input.unit.trim()||'Piece';
+ if(!barcode||!name||!Number.isFinite(input.unitCost)||input.unitCost<=0||!Number.isFinite(input.sellPrice)||input.sellPrice<0||!Number.isInteger(input.reorderAt)||input.reorderAt<0)throw new Error('Valid barcode, product name, prices and alert quantity are required.');
+ if(!['Automotive Parts & Products','Shop Supplies'].includes(input.category))throw new Error('Invalid product category.');
+ return {barcode,name,unit,category:input.category,unitCost:input.unitCost,sellPrice:input.sellPrice,reorderAt:input.reorderAt};
+}
+export function registerInventoryProduct(db:Database,input:NewInventoryProduct,by:string):Database {
+ requireAdmin(db,by);
+ if(!BRANCHES.some(b=>b.id===input.branch))throw new Error('Choose a valid branch.');
+ const details=cleanProductDetails(input);
+ if(!Number.isInteger(input.initialQty)||input.initialQty<0)throw new Error('Initial quantity must be a nonnegative whole number.');
+ if(db.inventory.some(p=>p.branch===input.branch&&p.barcode===details.barcode))throw new Error('Barcode already registered in this branch.');
+ const product:InventoryProduct={...details,id:uid(),branch:input.branch,openingQty:0,createdAt:new Date().toISOString()};
+ const next=log({...db,inventory:[product,...db.inventory]},by,'Inventory product created',`${details.barcode} · ${details.name} · ${input.branch}`);
+ return input.initialQty>0?recordStockIn(next,product.id,input.initialQty,by,'New product initial stock'):next;
+}
+export function updateInventoryProduct(db:Database,productId:string,input:ProductDetails,by:string):Database {
+ requireAdmin(db,by);
+ const old=db.inventory.find(p=>p.id===productId);
+ if(!old)throw new Error('Inventory product not found.');
+ const details=cleanProductDetails(input);
+ if(db.inventory.some(p=>p.id!==productId&&p.branch===old.branch&&p.barcode===details.barcode))throw new Error('Barcode already registered in this branch.');
+ const fields:(keyof ProductDetails)[]=['barcode','name','category','unit','unitCost','sellPrice','reorderAt'];
+ const changes=fields.filter(f=>old[f]!==details[f]).map(f=>`${f}: ${old[f]} → ${details[f]}`);
+ if(!changes.length)return db;
+ const next={...db,inventory:db.inventory.map(p=>p.id===productId?{...p,...details,updatedAt:new Date().toISOString(),updatedBy:by}:p)};
+ return log(next,by,'Inventory product updated',`${old.branch} · ${old.id} · ${changes.join(' | ')}`);
+}
 export function recordStockIn(db:Database,productId:string,qty:number,by:string,notes=''):Database {
  const product=db.inventory.find(p=>p.id===productId);
  if(!product||!Number.isInteger(qty)||qty<=0)throw new Error('Invalid product or positive quantity required.');
