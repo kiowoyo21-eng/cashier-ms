@@ -1,3 +1,9 @@
+# Version 7 Update — Separate Branch Revolving Funds & Disbursement Sign-off
+
+See [REVISION_STATUS_V7.md](REVISION_STATUS_V7.md) for approved rules, changes, print testing and integration limitations. The Cashier prepares its own branch RF replenishment and PB prepares its own branch RFP replenishment. Each of four branches has independent cash balances and the Admin report shows four per-branch totals. Prepared by / Verified by Accounting / Approved by President form the intended signatory workflow; browser-local approvals are explicitly simulated until both applications share Supabase.
+
+---
+
 # Version 6 — Guided Cashier POS & Auto PB Parts Matching
 
 **Current frontend update (Supabase intentionally disconnected):**

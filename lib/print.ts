@@ -1,5 +1,5 @@
 import {
-  BRANCH_NAME,categoryTotals,datePH,disbursementSummary,pesos,posCOGS,posCostBreakdown,
+  BRANCHES,BRANCH_NAME,branchFundTotals,balance,replenishmentDue,categoryTotals,datePH,disbursementSummary,pesos,posCOGS,posCostBreakdown,
   posTotal,paidTotal,posClosedDate,reportDateMatch,normalizePlate,pendingRFPDisbursementRows,
   type Audit,type BranchId,type Count,type Database,type Fund,type FundEntry,type POS,type Turnover
 } from './data';
@@ -63,6 +63,16 @@ table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:8px}th{he
 .fund-summary .signature{min-height:11mm;padding-top:1mm}
 .fund-summary .signature .name{font-size:9px}.fund-summary .signature .role{font-size:7px}
 .fund-summary .signature img{max-height:7mm;margin-top:-11mm}
+.branch-breakdown{margin-top:1.5mm;font-size:7.2px}
+.branch-breakdown table{font-size:7px}
+.branch-breakdown th,.branch-breakdown td{height:3.2mm;padding:.45mm 1mm}
+.branch-breakdown .grand{font-weight:800;background:#fff2b5}
+.approval-track{display:grid;grid-template-columns:repeat(3,1fr);gap:2.5mm;margin-top:2.6mm}
+.approval-track .approval-actor{border-top:1px solid #444;text-align:center;padding:1mm 1mm 0;font-size:8px;min-height:12mm;position:relative}
+.approval-track .approval-actor strong{display:block;font-size:9px}
+.approval-track .approval-actor span{display:block;font-size:7px;color:#525965}
+.approval-track .approval-actor img{height:6mm;max-width:56mm;object-fit:contain;display:block;margin:-7mm auto 1mm}
+@media print{.branch-breakdown,.approval-track{break-inside:avoid;page-break-inside:avoid}}
 .fund-summary .voucher-series{margin-top:1mm;line-height:1.4;max-height:4.2mm}
 .actions{position:fixed;bottom:15px;right:15px;z-index:999;padding:9px;border-radius:8px;background:white;border:1px solid #cbd1d8;box-shadow:0 4px 14px #0002}.actions button{background:#facc15;border:none;padding:11px 18px;border-radius:6px;font-weight:700;cursor:pointer}
 @media print{.actions{display:none!important}.print-page{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -88,11 +98,40 @@ function signatures(db:Database,preparedById?:string,signature?:string,at?:strin
   ].map(([role,name,img])=>`<div class="signature">${img?.startsWith('data:image/')?`<img src="${img}" alt="Recorded signature"/>`:''}<span class="name">${esc(name)}</span><span class="role">${esc(role)}</span>${at?`<div class="mini muted">${esc(at)}</div>`:''}</div>`).join('')}</div>`;
 }
 
+
+/** The individual report exposes only its own branch. Only Admin invokes the four-branch report. */
+function branchBreakdown(db:Database,fund:Fund,branch?:BranchId){
+ const all=branchFundTotals(db,fund);const rows=branch?all.rows.filter(r=>r.branch===branch):all.rows;
+ const totals=branch?{...rows[0]}:all.grand;
+ return `<div class="branch-breakdown"><strong>Fund balances by branch · ${esc(fund==='RF'?'Revolving Fund':'RFP Parts Fund')}</strong><table><thead><tr><th>Branch</th><th class="num">Starting Fund</th><th class="num">Expenses</th><th class="num">Received</th><th class="num">Remaining</th><th class="num">Replenish</th></tr></thead><tbody>${rows.map(r=>`<tr>${cell(r.name)}${[r.target,r.expenses,r.received,r.remaining,r.toReplenish].map(v=>cell(fmt(v),true)).join('')}</tr>`).join('')}${branch?'':`<tr class="grand">${cell('GRAND TOTAL')}${[totals.target,totals.expenses,totals.received,totals.remaining,totals.toReplenish].map(v=>cell(fmt(v),true)).join('')}</tr>`}</tbody></table></div>`;
+}
+function findReplenishment(db:Database,branch:BranchId,fund:Fund){
+ return db.fundEntries.filter(e=>e.branch===branch&&e.fund===fund&&e.kind==='replenishment').sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+}
+function disbursementSignatures(db:Database,request?:FundEntry,preparedById?:string){
+ const name=db.users.find(u=>u.id===(request?.createdBy||preparedById))?.name||'To be signed by preparer';
+ const accounting=db.settings.signatories?.checked?.trim()||'Accounting · Name pending';
+ const president=db.settings.signatories?.approved?.trim()||'President · Name pending';
+ const accountingStatus=request?.accountingStatus==='Verified'?'Simulated verification only':request?.accountingStatus==='Returned'?'Returned':'Pending external verification';
+ const presidentStatus=request?.presidentStatus==='Approved'?'Simulated approval only':request?.presidentStatus==='Rejected'?'Rejected':'Pending President approval';
+ return `<div class="approval-track"><div class="approval-actor">${request?.signature?.startsWith('data:image/')?`<img src="${request.signature}" alt="Prepared by recorded signature"/>`:''}<strong>${esc(name)}</strong><span>Prepared by · ${esc(request?dateTime(request.createdAt):'Draft · not yet submitted')}</span></div><div class="approval-actor"><strong>${esc(accounting)}</strong><span>Verified by: Accounting · ${esc(accountingStatus)}</span></div><div class="approval-actor"><strong>${esc(president)}</strong><span>Approved by: President · ${esc(presidentStatus)}</span></div></div><small>Accounting and President approval signatures must originate from their authorized workflow on the future shared Supabase database; demo status does not constitute their signatures.</small>`;
+}
+/** Printable Admin-only consolidated view; Cashier/PB never see other branches' fund balances. */
+export function printConsolidatedDisbursement(db:Database,fund:Fund){
+ const total=branchFundTotals(db,fund);
+ const detail=BRANCHES.map(b=>{
+  const s=disbursementSummary(db,b.id,fund),last=findReplenishment(db,b.id,fund);
+  return `<tr>${cell(b.name)}${[s.base,total.rows.find(r=>r.branch===b.id)!.expenses,total.rows.find(r=>r.branch===b.id)!.received,s.remaining,s.amountRequested].map(v=>cell(fmt(v),true)).join('')}${cell(last?.no||'Not submitted')}${cell(last?.status==='Approved'?'Received':last?.status==='Pending'?last.accountingStatus==='Verified'?'Awaiting President/receipt':'Awaiting Accounting':last?.status||'—')}</tr>`;
+ }).join('');
+ const summary=branchBreakdown(db,fund)+`<div class="notice">Every branch has a separately tracked fund balance and replenishment history. Replenishment = spent cash not yet received back for that branch. The grand total is for Admin financial oversight only.</div>`;
+ const html=page(header(`${fund==='RF'?'REVOLVING FUND':'RFP'} · ALL BRANCH DISBURSEMENT`,'Consolidated branch totals')+meta('All 4 branches','Current ledger balances')+summary+`<div class="summary-section"><h2>Latest Disbursement References & Stages</h2><table class="compact-table" style="max-width:none"><thead><tr><th>Branch</th><th>Fund Target</th><th>Total Expenses</th><th>Received</th><th>Balance</th><th>Due</th><th>Latest Reference</th><th>Latest Stage</th></tr></thead><tbody>${detail}</tbody></table></div><div class="fund-request-result"><span>TOTAL AMOUNT TO REPLENISH · ALL BRANCHES</span><strong>${fmt(total.grand.toReplenish)}</strong></div><div class="approval-track"><div class="approval-actor"><strong>Assigned branch Cashier / PB</strong><span>Prepared by · each individual request</span></div><div class="approval-actor"><strong>${esc(db.settings.signatories?.checked||'Accounting · Name pending')}</strong><span>Verified by: Accounting · separate system</span></div><div class="approval-actor"><strong>${esc(db.settings.signatories?.approved||'President · Name pending')}</strong><span>Approved by: President · final authorization</span></div></div><p class="mini muted">This consolidated print is not a signed approval; signatures belong to each branch's individual request.</p>`);
+ openPrint(`All Branches ${fund} Disbursement`,html,db.settings.reportLogo?.data);
+}
 /** Disbursement and replenishment are ONE request/document. The automatically
  * calculated replenishment amount is the spent amount that has not been restored.
  * The last detail sheet always includes the financial summary and signatories;
  * details paginate only when the transaction list no longer fits A4 landscape. */
-export function printFundReport(db:Database,branch:BranchId,fund:Fund,_entries:FundEntry[],from='',to=''){
+export function printFundReport(db:Database,branch:BranchId,fund:Fund,_entries:FundEntry[],from='',to='',preparedById?:string){
  const s=disbursementSummary(db,branch,fund,from,to),range=period(from,to),branchName=BRANCH_NAME(branch);
  const title=fund==='RF'?'REVOLVING FUND DISBURSEMENT & REPLENISHMENT':'RFP DISBURSEMENT & REPLENISHMENT';
  const expenses=s.period.filter(e=>e.kind==='expense').sort((a,b)=>a.date.localeCompare(b.date)||a.no.localeCompare(b.no));
@@ -106,18 +145,18 @@ export function printFundReport(db:Database,branch:BranchId,fund:Fund,_entries:F
  const catHTML=catRows.length?`<div class="fund-categories">${catRows.map(([k,v])=>`<div class="fund-category"><span>${esc(k)}</span><b>${fmt(v)}</b></div>`).join('')}</div>`:'<small>No expenses in selected period</small>';
  const deposits=s.checkDeposits;
  const depositHTML=deposits.length?`<table class="fund-deposits"><thead><tr><th>Date</th><th>Bank</th><th>Check / Reference</th><th class="num">Amount</th></tr></thead><tbody>${deposits.map(e=>`<tr>${cell(datePH(e.date))}${cell(e.bank||'—')}${cell(e.checkNo||e.no)}${cell(fmt(e.amount),true)}</tr>`).join('')}</tbody></table>`:'<small>None within selected period</small>';
- const last=expenses.at(-1);
+ const last=expenses.at(-1),request=findReplenishment(db,branch,fund);const submittedAmount=request?.status==='Pending'?request.amount:s.amountRequested;
  const figures=[['Fund Target',s.base],['Opening Cash on Hand',s.opening],['Less: Expenses',s.expenses],['Add: Replenishments',s.deposits],['Closing Cash on Hand',s.remaining]];
  const figuresHTML=`<div class="fund-figures">${figures.map(([name,value])=>`<div><span>${esc(name)}</span><strong>${fmt(Number(value))}</strong></div>`).join('')}</div>`;
  const summary=`<div class="fund-summary"><div class="fund-summary-title">Fund Reconciliation & Replenishment Request (Combined)</div>${figuresHTML}`+
-   `<div class="fund-request-result"><span>AUTOMATIC AMOUNT TO REPLENISH · spent cash not yet restored</span><strong>${fmt(s.amountRequested)}</strong></div>`+
+   `<div class="fund-request-result"><span>${request?.status==='Pending'?'SUBMITTED AMOUNT TO REPLENISH · fixed at submission':'AUTOMATIC AMOUNT TO REPLENISH · spent cash not yet restored'}</span><strong>${fmt(submittedAmount)}</strong></div>`+
    `<small>Previous unreplenished cash: ${fmt(s.base-s.opening)} + period expenses: ${fmt(s.expenses)} − approved replenishments: ${fmt(s.deposits)} = ${fmt(s.base-s.remaining)} net amount outstanding (minimum request ₱0). Historical expenses can be carried forward. Rejected expenses are excluded.</small>`+
    `<div class="fund-extra"><div>${fund==='RF'?`<h3>Expense Category Subtotals</h3>${catHTML}`:`<h3>Parts Purchase Summary</h3><small>${expenses.length} parts purchases · ${fmt(s.expenses)} in period expenses</small>`}</div><div><h3>Check Deposits / Replenishments</h3>${depositHTML}</div></div>`+
-   `<p class="voucher-series"><b>Cash Voucher References:</b> ${esc(voucherDisplay)} · <b>Branch:</b> ${esc(branchName)} · <b>Period:</b> ${esc(range)}</p>`+
-   signatures(db,last?.createdBy,last?.signature,last?datePH(last.date):undefined)+'</div>';
+   `<p class="voucher-series"><b>Disbursement Reference:</b> ${esc(request?.no||'Draft · not submitted')} · <b>Cash Vouchers:</b> ${esc(voucherDisplay)} · <b>Branch:</b> ${esc(branchName)}</p>`+
+   branchBreakdown(db,fund,branch)+disbursementSignatures(db,request,preparedById)+'</div>';
  // Reserve more room on the last detail sheet if numerous check deposits exist.
  // Up to 30 rows are still allowed per sheet. Short requests print as a single sheet.
- const finalPageCapacity=Math.max(8,30-Math.max(0,deposits.length-2)*2);
+ const finalPageCapacity=Math.max(8,Math.min(18,30-Math.max(0,deposits.length-2)*2));
  const batches:string[][][]=[];
  let remaining=rows.slice();
  while(remaining.length>finalPageCapacity){
@@ -151,14 +190,15 @@ export function printRFPParts(db:Database,branch:BranchId,from='',to=''){
 
 /** RFP replenishment request: only parts purchased after previous approved disbursement.
  * Includes summary on the final A4 sheet whenever it fits. */
-export function printPBDisbursement(db:Database,branch:BranchId){
+export function printPBDisbursement(db:Database,branch:BranchId,preparedById?:string){
  const name=BRANCH_NAME(branch);
  const previous=db.fundEntries.filter(e=>e.branch===branch&&e.fund==='RFP'&&e.kind==='replenishment'&&e.status==='Approved').sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
  const lastCutoff=previous?.createdAt;
- const items=pendingRFPDisbursementRows(db,branch);
+ const activeRequest=db.fundEntries.filter(e=>e.branch===branch&&e.fund==='RFP'&&e.kind==='replenishment'&&e.status==='Pending').sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+ const items=pendingRFPDisbursementRows(db,branch).filter(e=>!activeRequest||e.createdAt<=activeRequest.createdAt);
  const amount=items.reduce((n,e)=>n+e.amount,0);
  const currentFund=db.settings.rfpBase[branch]||0;
- const cashOnHand=currentFund-amount;
+ const cashOnHand=balance(db,branch,'RFP');const due=activeRequest?.amount??replenishmentDue(db,branch,'RFP');const request=findReplenishment(db,branch,'RFP');
  const rows=items.map(e=>[
   displayed(datePH(e.date)),displayed(e.no),displayed(e.description),displayed(e.payee),displayed(e.plate),
   displayed(db.pos.find(p=>p.id===e.linkedPosId)?.vehicle||e.car||'Not recorded'),displayed(e.quantity||1),
@@ -167,14 +207,15 @@ export function printPBDisbursement(db:Database,branch:BranchId){
  const range=previous?`After last approved disbursement request: ${dateTime(lastCutoff!)}`:'From start of recorded purchases (no completed replenishment)';
  const summary=`<div class="fund-summary"><div class="fund-summary-title">Automatic RFP Replenishment Request · ${esc(name)}</div>`+
  `<div class="fund-figures"><div><span>Original Parts Fund</span><strong>${fmt(currentFund)}</strong></div><div><span>Eligible Parts Expenses</span><strong>${fmt(amount)}</strong></div><div><span>Cash on Hand (Estimated)</span><strong>${fmt(cashOnHand)}</strong></div><div><span>Previous Replenishment</span><strong>${esc(previous?.no||'None')}</strong></div><div><span>Purchases Covered</span><strong>${items.length}</strong></div></div>`+
- `<div class="fund-request-result"><span>AMOUNT TO REPLENISH · eligible parts expenses since previous completed disbursement</span><strong>${fmt(amount)}</strong></div>`+
+ `<div class="fund-request-result"><span>AMOUNT TO REPLENISH · eligible unreplenished parts expenses</span><strong>${fmt(due)}</strong></div>`+
  `<small>This is a replenishment of spent parts money, not a new fund request. Pending and rejected purchase decisions are listed for review, but rejected expenses are excluded. Earlier completed disbursements are not duplicated.</small>`+
- `<p class="voucher-series"><b>Previous disbursement reference:</b> ${esc(previous?.no||'First disbursement')} · <b>Cutoff:</b> ${esc(lastCutoff?dateTime(lastCutoff):'No previous approved disbursement')} · <b>Branch:</b> ${esc(name)}</p>`+signatures(db,items.at(-1)?.createdBy,items.at(-1)?.signature)+'</div>';
- const batches=pagination(rows,30);
+ `<p class="voucher-series"><b>Current request:</b> ${esc(request?.no||'Draft · not submitted')} · <b>Previous completed:</b> ${esc(previous?.no||'First disbursement')} · <b>Cutoff:</b> ${esc(lastCutoff?dateTime(lastCutoff):'None')}</p>`+
+ `<p class="mini"><b>Check / Deposit Details:</b> ${esc(request?.bank||'Bank pending')} · ${esc(request?.checkNo||'Check reference pending')} · Only funds actually received are credited.</p>`+branchBreakdown(db,'RFP',branch)+disbursementSignatures(db,request,preparedById)+'</div>';
+ const batches=pagination(rows,18);
  const html=batches.map((batch,i)=>`<section class="print-page fund-print" data-density="${batch.length<=15?'roomy':batch.length<=25?'mid':'compact'}">`+
  header('RFP DISBURSEMENT / REPLENISHMENT',`Sheet ${i+1} of ${batches.length}`)+meta(name,range,previous?.no||'First disbursement')+
  listTable(['Date','RFP Ref','Part','Supplier','Plate','Car','Qty','Unit Cost','Total','Receipt','Status'],batch,[8,14,12,12,8,11,4,8,8,8,7])+
- `<div class="footline"><span>${batch.length} purchases on this sheet · maximum 30</span><span>${rows.length} transactions after last completed disbursement</span></div>`+(i===batches.length-1?summary:'')+'</section>').join('');
+ `<div class="footline"><span>${batch.length} purchases on this sheet · maximum 18 with signatures</span><span>${rows.length} transactions after last completed disbursement</span></div>`+(i===batches.length-1?summary:'')+'</section>').join('');
  openPrint(`RFP Disbursement · ${name}`,html,db.settings.reportLogo?.data);
 }
 
