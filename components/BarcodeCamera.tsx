@@ -12,7 +12,7 @@ export default function BarcodeCamera({onScan,onClose}:{onScan:(barcode:string)=
   let active=true,stream:MediaStream|undefined,frame=0,busy=false;
   type DetectorType = new (settings:{formats:string[]})=>{detect:(video:HTMLVideoElement)=>Promise<{rawValue:string}[]>};
   const Constructor=(window as unknown as {BarcodeDetector?:DetectorType}).BarcodeDetector;
-  if(!Constructor||!navigator.mediaDevices?.getUserMedia){setMessage('Camera scanning is unavailable in this browser. Use a USB/Bluetooth scanner or type the barcode.');return;}
+  if(!Constructor||!navigator.mediaDevices?.getUserMedia){setMessage('Camera barcode recognition is not supported by this browser. You can still scan with a USB/Bluetooth barcode reader or enter the barcode manually.');return;}
   let detector:InstanceType<DetectorType>;
   try{detector=new Constructor({formats:['code_128','code_39','ean_13','ean_8','upc_a']});}
   catch{setMessage('Camera barcode format not supported. Please use the scanner input.');return;}

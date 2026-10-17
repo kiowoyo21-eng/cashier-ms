@@ -85,3 +85,6 @@
 @media(max-width:580px){.inventory-cogs-totals{grid-template-columns:1fr 1fr}.inventory-cogs-totals strong{font-size:12px}.stock-out-header .button{width:100%}.scan-field{align-items:flex-start;flex-direction:column}.scan-field>.field{width:100%}}
 
 .barcode-camera{border:1px solid #ede0a9;border-radius:9px;padding:10px;background:#fffbef}.barcode-camera-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.barcode-camera-top strong{display:flex;gap:6px;align-items:center}.barcode-camera video{display:block;width:100%;max-height:260px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:#222}.barcode-camera p{margin:8px 0 0}
+
+/* Version 8.2: clearly accessible barcode camera controls across inventory flows */
+.inventory-scan-btn{min-height:37px;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}.inventory-scan-panel{padding:0 20px 12px;max-width:550px}.inventory-scan-help{display:flex;align-items:flex-start;gap:7px;font-size:11px;line-height:1.5;color:#777d86;margin:0;padding:0 21px 12px}.inventory-scan-help svg{flex-shrink:0;margin-top:2px}.stack-fields>.inventory-scan-btn{align-self:flex-start}@media(max-width:700px){.filters>.inventory-scan-btn{flex:1 1 auto}.inventory-scan-panel{padding:0 13px 13px;max-width:none}.inventory-scan-help{padding:0 13px 12px}}
