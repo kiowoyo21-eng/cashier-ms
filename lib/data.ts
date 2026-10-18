@@ -443,6 +443,31 @@ export function amountInWords(amount:number){
   for(const [value,name] of [[1e9,'Billion'],[1e6,'Million'],[1000,'Thousand'],[1,'']] as [number,string][]){const part=Math.floor(remaining/value);if(part){groups.push(`${under1000(part)} ${name}`.trim());remaining%=value;}}
   return `${groups.join(' ')||'Zero'} Pesos and ${String(centavos).padStart(2,'0')}/100 Only`;
 }
+/** POS records with irreversible inventory consumption remain accountability-pending
+ * until the POS itself is completed/closed. This is independent of how many days pass. */
+export function hasConsumedStock(db:Database,posId:string):boolean {
+ return (db.stockMovements||[]).some(m=>m.kind==='StockOut'&&m.posId===posId);
+}
+export function pendingConsumedStockPOS(db:Database,branch?:BranchId):POS[] {
+ const consumed=new Set((db.stockMovements||[]).filter(m=>m.kind==='StockOut').map(m=>m.posId).filter(Boolean) as string[]);
+ return db.pos.filter(p=>p.status==='Pending'&&consumed.has(p.id)&&(!branch||p.branch===branch))
+  .sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+}
+/** Daily reminder rows deliberately include older pending records; they never expire by age. */
+export function pendingConsumedStockReminder(db:Database,branch?:BranchId,asOf=todayPH()) {
+ const rows=pendingConsumedStockPOS(db,branch);
+ return rows.map(pos=>({posId:pos.id,reference:pos.no,plate:pos.plate,branch:pos.branch,createdAt:pos.createdAt,
+  ageDays:Math.max(0,Math.floor((new Date(`${asOf}T12:00:00+08:00`).getTime()-new Date(`${pos.date}T12:00:00+08:00`).getTime())/86400000)),
+  message:`${pos.no} · ${pos.plate||'No plate'} remains pending with consumed inventory. Resume the POS details and resolve the transaction.`}));
+}
+/** A consumed-stock POS cannot be closed through a generic close action until its
+ * details have been completed; callers must still enforce payment and role rules. */
+export function assertPOSCanCloseAfterStockConsumption(db:Database,posId:string):void {
+ const pos=db.pos.find(p=>p.id===posId);
+ if(!pos||pos.status!=='Pending')throw new Error('POS is not pending.');
+ if(hasConsumedStock(db,posId)&&(!pos.client.trim()||!pos.plate.trim()||!pos.vehicle.trim()||!pos.items.length||pos.items.some(i=>!i.name.trim()||i.qty<=0)))
+  throw new Error('Cannot close POS: inventory was consumed, but required POS details/items are incomplete. Resume the POS wizard from Step 1.');
+}
 export function normalizePlate(plate:string){return plate.toUpperCase().replace(/[^A-Z0-9]/g,'');}
 export function csvEscape(value:unknown):string {let s=String(value??'');if(/^[=+@\t\r]/.test(s) || /^-[^0-9]/.test(s))s="'"+s;return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
 export function downloadFile(name:string,content:string,mime='text/csv;charset=utf-8'){
