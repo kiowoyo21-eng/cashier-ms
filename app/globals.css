@@ -148,3 +148,18 @@
 .price-product-name small{color:#64748b;font-size:12px}
 .price-actions{display:flex;justify-content:flex-end;margin-top:14px}
 @media(max-width:780px){.price-product-row{grid-template-columns:1fr 1fr}.price-product-name{grid-column:span 2}.price-product-row button{grid-column:span 2}.price-actions button{width:100%}}
+
+/* Controlled barcode receiving and stock release review (frontend prototype). */
+.inventory-review{margin:14px 0;padding:18px;border:1px solid #bdd2e4;background:var(--panel,#fff);border-radius:14px;display:grid;gap:14px}
+.inventory-review-callout{display:flex;align-items:flex-start;gap:10px;padding:13px;border:1px solid #f1d28a;border-radius:9px;background:#fff9e9;color:#795313;font-size:13px;line-height:1.6}
+.inventory-review-callout svg{flex-shrink:0;margin-top:1px}
+.inventory-review-list{display:grid;gap:8px}
+.inventory-review-line{display:grid;grid-template-columns:minmax(140px,2fr) minmax(130px,1fr);gap:12px;align-items:start;padding:12px;background:var(--surface,#f7f9fc);border:1px solid #dbe4ed;border-radius:10px}
+.inventory-review-line>div{display:grid;gap:5px}
+.inventory-review-line small{display:block;color:#64748b}
+.inventory-review-line>label:last-child:nth-child(3){grid-column:1/-1}
+.inventory-check-ok{color:#167149;font-size:12px;font-weight:650}
+.inventory-check-pending{color:#a16207;font-size:12px;font-weight:650}
+.inventory-review-ack{display:flex;align-items:flex-start;gap:8px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;line-height:1.5}
+.inventory-review-ack input{margin-top:4px}
+@media(max-width:600px){.inventory-review{padding:11px}.inventory-review-line{grid-template-columns:1fr}}

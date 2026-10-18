@@ -46,17 +46,17 @@ export default function BulkScanRegistration({db,initialBranch,onSave,onClose}:{
   ev.preventDefault();
   if(!rows.length){setMessage('No new barcodes have been scanned yet.');return;}
   if(rows.some(r=>!r.name.trim()||!r.unit.trim()||Number(r.initialQty)<0||!Number.isInteger(Number(r.initialQty))||Number(r.reorderAt)<0||!Number.isInteger(Number(r.reorderAt)))){
-   setMessage('Enter a name for every scanned product and confirm physical quantities. Actual unit cost comes after Submit All.');return;
+   setMessage('Enter a name for every scanned product then configure unit costs. Physical stock is received separately.');return;
   }
-  if(rows.some(r=>r.multiple&&Number(r.initialQty)<2)){setMessage('Multiple-unit products need a physically counted quantity of 2 or more.');return;}
-  if(!window.confirm(`Have you physically checked the stock quantities for all ${rows.length} products in ${branch}?\n\nEach product starts with 1 unit unless you checked Multiple. Products will appear under Pending Stock. Prices are configured on the next screen, before inventory is available to use.`))return;
-  const payload:PendingInventoryRegistration[]=rows.map(r=>({branch,barcode:r.barcode,name:r.name.trim(),category:r.category,unit:r.unit.trim(),initialQty:r.multiple?Number(r.initialQty):1,reorderAt:Number(r.reorderAt),trackingMode:r.trackingMode,...(r.trackingMode==='serialized'?{initialUnitCodes:r.serialText.split(/[\s,;]+/).map(clean).filter(Boolean)}:{})}));
+  
+  if(!window.confirm(`Register ${rows.length} distinct products in ${branch} with ZERO stock?\n\nProducts will need Unit Cost configuration, then separate physical receiving with independent Admin approval. Scanning the master barcode here never creates units.`))return;
+  const payload:PendingInventoryRegistration[]=rows.map(r=>({branch,barcode:r.barcode,name:r.name.trim(),category:r.category,unit:r.unit.trim(),initialQty:0,reorderAt:Number(r.reorderAt),trackingMode:r.trackingMode,...(r.trackingMode==='serialized'?{initialUnitCodes:[]}:{})}));
   if(onSave(payload)){
    setMessage(`Submitted ${payload.length} products to Pending Stock. Next: Cost Configuration.`);setRows([]);seen.current.clear();setBarcodeInput('');setCamera(false);
   }
  };
  return <section className="bulk-scan-panel" aria-label="Bulk Scan product registration">
-  <div className="bulk-scan-header"><div><h3><ScanBarcode size={19}/> Bulk Scan</h3><p>Admin only · Scan unique barcodes, enter each product name, then Submit All. Actual unit costs are configured afterward.</p></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close Bulk Scan"><X size={18}/></button></div>
+  <div className="bulk-scan-header"><div><h3><ScanBarcode size={19}/> Bulk Scan</h3><p>Admin only · Scan unique barcodes, enter each product name, then Submit All (zero stock). Actual unit costs are configured afterward.</p></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close Bulk Scan"><X size={18}/></button></div>
   <form onSubmit={submit}>
    <div className="bulk-scan-controls"><label className="field"><span>Receiving Branch</span><select value={branch} onChange={e=>changeBranch(e.target.value as BranchId)}>{BRANCHES.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
     <label className="field"><span>Scan / Enter Barcode</span><input ref={scanner} value={barcodeInput} onChange={e=>setBarcodeInput(clean(e.target.value))} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();add(barcodeInput)}}} placeholder="Scan then press Enter" aria-label="Bulk scan barcode" autoComplete="off"/></label>
@@ -72,7 +72,7 @@ export default function BulkScanRegistration({db,initialBranch,onSave,onClose}:{
       <label className="field"><span>Product Name</span><input value={r.name} onChange={e=>change(r.key,'name',e.target.value)} placeholder="Enter product name" required/></label>
       <label className="field"><span>Category</span><select value={r.category} onChange={e=>change(r.key,'category',e.target.value as InventoryCategory)}><option>Automotive Parts & Products</option><option>Shop Supplies</option></select></label>
       <label className="field"><span>Tracking</span><select value={r.trackingMode} onChange={e=>change(r.key,'trackingMode',e.target.value as 'quantity'|'serialized')}><option value="quantity">Quantity count</option><option value="serialized">Unique barcode per unit</option></select></label><label className="field"><span>Unit</span><input value={r.unit} onChange={e=>change(r.key,'unit',e.target.value)} required/></label>
-      <div className="bulk-initial-stock"><label className="inventory-check"><input type="checkbox" checked={r.multiple} onChange={e=>{change(r.key,'multiple',e.target.checked);change(r.key,'initialQty',e.target.checked?'2':'1');}}/> Multiple units?</label>{r.multiple?<label className="field"><span>Physical Count (2 or more)</span><input type="number" value={r.initialQty} min="2" step="1" onChange={e=>change(r.key,'initialQty',e.target.value)} required/></label>:<small>Pending initial quantity: 1 unit (not yet posted)</small>}{r.trackingMode==='serialized'&&<label className="field"><span>Individual Unit Barcodes — 1 per unit</span><textarea value={r.serialText} onChange={e=>change(r.key,'serialText',e.target.value)} rows={2} placeholder="Unique code per unit" required/></label>}</div>
+      <div className="bulk-initial-stock"><strong>Starting stock: 0 units</strong><small>Register the product first. Physical quantities are added only through Controlled Stock In with delivery proof and independent verification.</small></div>
       <label className="field"><span>Low Stock Alert</span><input value={r.reorderAt} type="number" step="1" min="0" onChange={e=>change(r.key,'reorderAt',e.target.value)} required/></label>
      </div></div>)}</div>:<p className="bulk-scan-empty">No barcodes yet. Scan products using a USB/Bluetooth reader, type a barcode and press Enter, or open Camera Bulk Scan on a supported device.</p>}
    <div className="bulk-scan-actions"><button type="button" className="button button-secondary" onClick={onClose}>Close</button><button className="button button-primary" type="submit" disabled={!rows.length}><Check size={16}/> Submit All ({rows.length})</button></div>

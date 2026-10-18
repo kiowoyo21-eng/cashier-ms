@@ -35,5 +35,5 @@ const page=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
 assert(page.includes("setPosTab('drafts')"));assert(page.includes('Drafts ({filterBranch(db.pos)'));
 assert(page.includes('Open Draft'));
 const panel=fs.readFileSync(path.join(root,'components/StockScanPanel.tsx'),'utf8');
-assert(panel.includes('Confirm & Add Stock'));assert(panel.includes('adminReceive'));
+assert(panel.includes('Submit for Verification'));assert(panel.includes('adminReceive'));
 console.log('PASS v8.7: Admin direct verified Stock In; Cashier consume creates and reuses POS Draft; no persistence on invalid stock-out; branch/actor/ambiguity guards; dedicated visible Drafts tab.');

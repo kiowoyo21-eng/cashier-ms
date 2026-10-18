@@ -26,6 +26,6 @@ const result=d.assignConsumedStockToPOS(db,cashier.branch,'214UWI',[{productId:o
 assert.equal(result.created,true);assert.equal(result.pos.status,'Pending');assert.equal(d.stockAvailable(result.db,oil),5);
 for(const [id,count] of startingOther){assert.equal(d.stockAvailable(result.db,result.db.inventory.find(x=>x.id===id)),count,'other product unchanged');}
 const scan=fs.readFileSync(path.join(root,'components/StockScanPanel.tsx'),'utf8');assert(scan.includes('Multiple units'));assert(scan.includes("multiple:false"));assert(scan.includes("mode==='receive'&&!proof"));
-const bulk=fs.readFileSync(path.join(root,'components/BulkScanRegistration.tsx'),'utf8');assert(bulk.includes("initialQty:'1'"));assert(bulk.includes('Multiple units?'));assert(bulk.includes('initialQty:r.multiple?Number(r.initialQty):1'));
-const app=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');assert(app.includes('setNewProductMultiple(false)'));assert(app.includes('Multiple units physically received'));assert(!app.includes('initialQty:0},user.id'));assert(app.includes('setPosTab(\'drafts\')'));
+const bulk=fs.readFileSync(path.join(root,'components/BulkScanRegistration.tsx'),'utf8');assert(bulk.includes('Starting stock: 0 units'));assert(bulk.includes('initialQty:0'));
+const app=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');assert(app.includes('setNewProductMultiple(false)'));assert(app.includes('Product Master Only · Starting Quantity 0'));assert(app.includes('initialQty:0'));assert(app.includes('setPosTab(\'drafts\')'));
 console.log('PASS v8.8: Admin register one unit by default, explicit multiple, serialized codes, receiving approval, posted stock usable by Cashier POS Draft, per-branch ledger and scanner controls.');

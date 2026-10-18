@@ -45,10 +45,13 @@ export interface FundEntry {
 export type InventoryCategory = 'Automotive Parts & Products'|'Shop Supplies';
 export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;/** Legacy stored value; not used for POS pricing. */sellPrice?:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;updatedAt?:string;updatedBy?:string;archivedAt?:string;trackingMode?:'quantity'|'serialized';priceConfigured?:boolean;pendingInitialQty?:number;pendingUnitCodes?:string[];}
 /** Append-only movement ledger. StockOut and StockReturn records must never be mutated. */
-export interface StockMovement {id:string;productId:string;branch:BranchId;kind:'StockIn'|'StockOut'|'StockReturn';qty:number;unitCost:number;posId?:string;sourceStockOutId?:string;by:string;at:string;notes?:string;unitCodes?:string[];receiptId?:string;}
+export interface StockMovement {id:string;productId:string;branch:BranchId;kind:'StockIn'|'StockOut'|'StockReturn';qty:number;unitCost:number;posId?:string;sourceStockOutId?:string;by:string;at:string;notes?:string;unitCodes?:string[];receiptId?:string;issueId?:string;}
 export interface StockReceiptLine {productId:string;qty:number;unitCodes?:string[];}
 /** A pending Stock In does not alter available inventory. Admin verifies physical count first. */
 export interface StockReceipt {id:string;branch:BranchId;reference:string;lines:StockReceiptLine[];notes:string;proof?:Receipt;status:'Pending'|'Approved'|'Rejected';createdBy:string;createdAt:string;verifiedBy?:string;verifiedAt?:string;verificationNotes?:string;physicalCountConfirmed?:boolean;}
+/** Stock is never deducted by a scan or a cashier request. A different Admin
+ * authorizes a documented issue against an existing open POS/vehicle. */
+export interface StockIssueRequest {id:string;branch:BranchId;posId:string;lines:StockReceiptLine[];reason:string;status:'Pending'|'Approved'|'Rejected';createdBy:string;createdAt:string;decidedBy?:string;decidedAt?:string;decisionNotes?:string;}
 export interface StockCorrection {id:string;stockOutId:string;branch:BranchId;posId:string;qty:number;reason:string;requestedBy:string;requestedAt:string;status:'Pending'|'Approved'|'Rejected';decidedBy?:string;decidedAt?:string;decisionNotes?:string;}
 export interface POSLine {id:string;type:'Service'|'Part';name:string;qty:number;price:number;cost:number;supplier?:string;receiptNo?:string;proof?:Receipt;}
 export interface POSPayment {id:string;mode:'Cash'|'GCash'|'Bank Transfer'|'Card';amount:number;date:string;}
@@ -59,7 +62,7 @@ export interface Turnover {id:string;branch:BranchId;date:string;amount:number;n
 export interface ChangeRequest {id:string;type:'Edit RFP'|'Change Branch';entryId:string;branch:BranchId;requestedBy:string;changes:Partial<FundEntry>;original?:Partial<FundEntry>;reason:string;status:'Pending'|'Approved'|'Rejected';createdAt:string;decidedBy?:string;}
 export interface Audit {id:string;at:string;by:string;action:string;detail:string;}
 export interface Database {
-  users:User[];fundEntries:FundEntry[];pos:POS[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];stockReceipts:StockReceipt[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
+  users:User[];fundEntries:FundEntry[];pos:POS[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];stockReceipts:StockReceipt[];stockIssues?:StockIssueRequest[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
   settings:{rfBase:Record<BranchId,number>;rfpBase:Record<BranchId,number>;categories:string[];signatories?:{checked:string;approved:string};reportLogo?:Receipt};
 }
 export const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ID-${Date.now()}-${Math.random().toString(36).slice(2,7)}`);
@@ -117,7 +120,7 @@ export function removeUntouchedDemoProducts(db:Database):Database {
 }
 
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
-export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];return removeUntouchedDemoProducts(d);}}}catch{}return createSeed();}
+export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];d.stockIssues=d.stockIssues||[];return removeUntouchedDemoProducts(d);}}}catch{}return createSeed();}
 export function storeDB(db:Database):boolean {try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));return true;}catch{return false;}}
 export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
@@ -183,7 +186,7 @@ export const needsPriceConfiguration=needsCostConfiguration;
 
 /** Atomic Admin registration of scanned physical products into Pending Stock.
  * No Stock In movement and no available quantity are posted until actual unit cost is configured. */
-export function registerPendingInventoryProducts(db:Database,inputs:PendingInventoryRegistration[],by:string):Database {
+export function registerPendingInventoryProducts(db:Database,inputs:PendingInventoryRegistration[],by:string,registrationOnly=false):Database {
  requireAdmin(db,by);
  if(!inputs.length)throw new Error('Scan and name at least one product.');
  const seen=new Set<string>();
@@ -195,7 +198,7 @@ export function registerPendingInventoryProducts(db:Database,inputs:PendingInven
   if(!barcode||!name)throw new Error('Product name and barcode are required for each scan.');
   if(!['Automotive Parts & Products','Shop Supplies'].includes(input.category))throw new Error('Select a valid product category.');
   if(!Number.isInteger(input.reorderAt)||input.reorderAt<0)throw new Error('Invalid low-stock threshold.');
-  if(!Number.isInteger(input.initialQty)||input.initialQty<1)throw new Error('Physically counted quantity must be at least 1.');
+  if(!Number.isInteger(input.initialQty)||input.initialQty<(registrationOnly?0:1))throw new Error('Invalid initial quantity for registration.');
   const key=`${input.branch}:${barcode}`;
   if(seen.has(key)||db.inventory.some(p=>p.branch===input.branch&&p.barcode===barcode))throw new Error(`Duplicate product barcode ${barcode} in ${input.branch}.`);
   seen.add(key);
@@ -223,11 +226,11 @@ export function configurePendingProductCosts(db:Database,updates:ProductCostUpda
   if(!Number.isFinite(item.unitCost)||item.unitCost<=0)throw new Error(`Enter a valid positive Unit Cost for ${product.name}.`);
   const qty=product.pendingInitialQty||0;
   const codes=product.pendingUnitCodes||[];
-  if(!Number.isInteger(qty)||qty<1)throw new Error('Pending verified quantity is missing. Please investigate.');
+  if(!Number.isInteger(qty)||qty<0)throw new Error('Pending quantity is invalid. Please investigate.');
   if(product.trackingMode==='serialized'&&codes.length!==qty)throw new Error('Pending serial unit codes do not match the receiving count.');
   const at=new Date().toISOString();
-  const movement:StockMovement={id:uid(),productId:product.id,branch:product.branch,kind:'StockIn',qty,unitCost:item.unitCost,by,at,notes:'Admin confirmed initial physical stock and configured actual unit cost',...(product.trackingMode==='serialized'?{unitCodes:[...codes]}:{})};
-  next=log({...next,inventory:next.inventory.map(p=>p.id===product.id?{...p,unitCost:item.unitCost,priceConfigured:true,pendingInitialQty:0,pendingUnitCodes:undefined,updatedAt:at,updatedBy:by}:p),stockMovements:[movement,...next.stockMovements]},by,'Cost Configuration completed & initial Stock In posted',`${product.barcode} · ${product.name} · ${qty} ${product.unit} · ${product.branch} · Unit COGS ${item.unitCost}`);
+  const movement:StockMovement|undefined=qty>0?{id:uid(),productId:product.id,branch:product.branch,kind:'StockIn',qty,unitCost:item.unitCost,by,at,notes:'Legacy initial physical stock entry from product registration',...(product.trackingMode==='serialized'?{unitCodes:[...codes]}:{})}:undefined;
+  next=log({...next,inventory:next.inventory.map(p=>p.id===product.id?{...p,unitCost:item.unitCost,priceConfigured:true,pendingInitialQty:0,pendingUnitCodes:undefined,updatedAt:at,updatedBy:by}:p),stockMovements:movement?[movement,...next.stockMovements]:next.stockMovements},by,movement?'Legacy cost configuration + initial stock posting':'Unit cost set — no stock credited',`${product.barcode} · ${product.name} · ${qty} initial units · ${product.branch} · Unit COGS ${item.unitCost}`);
  }
  return next;
 }
@@ -318,12 +321,13 @@ function verifiedUnitCodes(db:Database,productId:string):Set<string>{
  return live;
 }
 /** One receiving batch; scanner repeats never implicitly increase quantities. */
-export function submitStockReceipt(db:Database,lines:StockReceiptLine[],reference:string,notes:string,by:string,proof?:Receipt):Database {
+export function submitStockReceipt(db:Database,lines:StockReceiptLine[],reference:string,notes:string,by:string,proof?:Receipt,requireIndependentReview=false):Database {
  const actor=db.users.find(u=>u.id===by&&u.active);
  if(!actor||(actor.role!=='cashier'&&actor.role!=='admin'))throw new Error('Only Cashier or Admin may receive stock.');
  const receivingBranch:BranchId=actor.role==='admin'?(db.inventory.find(p=>p.id===lines[0]?.productId)?.branch||actor.branch):actor.branch;
  if(!lines.length||!reference.trim())throw new Error('Add items and a delivery reference before submitting Stock In.');
  if(!proof||!proof.name||!proof.data)throw new Error('Attach a supporting delivery receipt or photo for Stock In verification.');
+ if((db.stockReceipts||[]).some(r=>r.branch===receivingBranch&&r.status!=='Rejected'&&r.reference.trim().toUpperCase()===reference.trim().toUpperCase()))throw new Error('This delivery reference already has a pending/approved receipt in the branch. Investigate duplicates before receiving again.');
  const seen=new Set<string>(),allCodes=new Set<string>(),cleanLines:StockReceiptLine[]=[];
  for(const line of lines){
   const p=db.inventory.find(p=>p.id===line.productId&&!p.archivedAt);
@@ -340,7 +344,7 @@ export function submitStockReceipt(db:Database,lines:StockReceiptLine[],referenc
   } else if(codes.length)throw new Error('Unit codes are only for serialized products.');
   cleanLines.push({productId:p.id,qty:line.qty,...(codes.length?{unitCodes:codes}:{})});
  }
- const confirmed=actor.role==='admin';
+ const confirmed=actor.role==='admin'&&!requireIndependentReview;
  const now=new Date().toISOString();
  const receipt:StockReceipt={id:uid(),branch:receivingBranch,reference:reference.trim(),lines:cleanLines,notes:notes.trim(),proof,status:confirmed?'Approved':'Pending',createdBy:by,createdAt:now,...(confirmed?{verifiedBy:by,verifiedAt:now,physicalCountConfirmed:true,verificationNotes:'Admin confirmed actual physical quantity and supporting delivery evidence on receipt.'}:{})};
  const newMovements:StockMovement[]=confirmed?cleanLines.map(line=>({id:uid(),productId:line.productId,branch:receivingBranch,kind:'StockIn',qty:line.qty,unitCost:db.inventory.find(p=>p.id===line.productId)!.unitCost,by,at:now,notes:`Admin physically verified stock receipt ${receipt.reference}`,receiptId:receipt.id,...(line.unitCodes?.length?{unitCodes:line.unitCodes}:{})})):[];
@@ -358,6 +362,73 @@ export function reviewStockReceipt(db:Database,id:string,approve:boolean,by:stri
  const stockMovements=approve?[...receipt.lines.map(x=>{const product=db.inventory.find(p=>p.id===x.productId)!;return {id:uid(),productId:x.productId,branch:receipt.branch,kind:'StockIn' as const,qty:x.qty,unitCost:product.unitCost,by,at,notes:`Verified Stock In: ${receipt.reference}`,receiptId:receipt.id,unitCodes:x.unitCodes};}),...db.stockMovements]:db.stockMovements;
  const stockReceipts=db.stockReceipts.map(r=>r.id===id?{...r,status:approve?'Approved' as const:'Rejected' as const,verifiedBy:by,verifiedAt:at,verificationNotes:notes,physicalCountConfirmed:approve?true:false}:r);
  return log({...db,stockMovements,stockReceipts},by,approve?'Physical Stock In approved':'Stock In rejected',`${receipt.branch} · ${receipt.reference} · ${notes}`);
+}
+/** Both Cashier and Admin-prepared receiving needs an independent reviewer.
+ * Exact per-product counted quantities are required and immutable after submission. */
+export function verifyControlledStockReceipt(db:Database,id:string,approve:boolean,by:string,counted:Record<string,number>,notes:string):Database {
+ const receipt=(db.stockReceipts||[]).find(r=>r.id===id);
+ if(!receipt||receipt.status!=='Pending')throw new Error('Pending Stock In receipt not found.');
+ if(!notes.trim()||notes.trim().length<10)throw new Error('Enter verification findings (at least 10 characters).');
+ if(approve){
+  const keys=Object.keys(counted);
+  if(keys.length!==receipt.lines.length||receipt.lines.some(line=>!Object.prototype.hasOwnProperty.call(counted,line.productId)||!Number.isInteger(counted[line.productId])||counted[line.productId]<0))throw new Error('Count every product independently before approval.');
+  const mismatch=receipt.lines.find(line=>counted[line.productId]!==line.qty);
+  if(mismatch){const item=db.inventory.find(p=>p.id===mismatch.productId);throw new Error(`Physical count mismatch for ${item?.name||mismatch.productId}. Expected ${mismatch.qty}, counted ${counted[mismatch.productId]}. Reject and submit a new corrected receipt; do not overwrite the original.`);}
+ }
+ return reviewStockReceipt(db,id,approve,by,approve,notes);
+}
+/** Reserve quantities while requests await approval. Physical stock is not yet deducted. */
+export function pendingIssueQty(db:Database,productId:string,excludingIssueId=''):number {
+ return (db.stockIssues||[]).filter(r=>r.status==='Pending'&&r.id!==excludingIssueId).flatMap(r=>r.lines).filter(l=>l.productId===productId).reduce((n,l)=>n+l.qty,0);
+}
+/** Do not release items from scanning alone. Link each request to an existing customer POS. */
+export function requestStockIssue(db:Database,posId:string,lines:StockReceiptLine[],reason:string,by:string):Database {
+ const actor=db.users.find(u=>u.id===by&&u.active),pos=db.pos.find(p=>p.id===posId);
+ if(!actor||actor.role!=='cashier'||!pos||pos.branch!==actor.branch||pos.status!=='Pending')throw new Error('Stock release requires your branch Cashier and an existing open POS.');
+ if(!pos.plate.trim()||!pos.client.trim())throw new Error('Complete the POS plate number and customer before requesting stock release.');
+ if(!reason.trim()||reason.trim().length<12)throw new Error('Describe the customer job / why these items are needed (at least 12 characters).');
+ if(!lines.length)throw new Error('Scan at least one product.');
+ const seen=new Set<string>(),serials=new Set<string>(),cleanLines:StockReceiptLine[]=[];
+ for(const line of lines){
+  const product=db.inventory.find(p=>p.id===line.productId&&!p.archivedAt);
+  if(!product||product.branch!==actor.branch||needsPriceConfiguration(product))throw new Error('Product is unavailable or belongs to another branch.');
+  if(seen.has(product.id))throw new Error('Duplicate product. Set one physical quantity per product.');
+  seen.add(product.id);
+  if(!Number.isInteger(line.qty)||line.qty<=0)throw new Error('Stock release quantities must be positive whole numbers.');
+  if(line.qty>stockAvailable(db,product)-pendingIssueQty(db,product.id))throw new Error(`${product.name}: insufficient unreserved stock; another issue request may be pending.`);
+  const codes=(line.unitCodes||[]).map(normUnitCode).filter(Boolean);
+  if(product.trackingMode==='serialized'){
+   const live=verifiedUnitCodes(db,product.id);
+   if(codes.length!==line.qty||new Set(codes).size!==codes.length||!codes.every(c=>live.has(c)))throw new Error(`${product.name}: scan each unique available unit code.`);
+   const reserved=new Set((db.stockIssues||[]).filter(r=>r.status==='Pending').flatMap(r=>r.lines).flatMap(l=>l.unitCodes||[]));
+   for(const code of codes){if(serials.has(code)||reserved.has(code))throw new Error(`Unit code ${code} is already in a pending release.`);serials.add(code);}
+  }else if(codes.length)throw new Error('Regular products cannot include unique unit codes.');
+  cleanLines.push({productId:product.id,qty:line.qty,...(codes.length?{unitCodes:codes}:{})});
+ }
+ const request:StockIssueRequest={id:uid(),branch:actor.branch,posId,lines:cleanLines,reason:reason.trim(),createdBy:by,createdAt:new Date().toISOString(),status:'Pending'};
+ return log({...db,stockIssues:[request,...(db.stockIssues||[])]},by,'Stock release requested — NOT deducted',`${pos.no} · ${actor.branch} · ${cleanLines.map(l=>`${db.inventory.find(p=>p.id===l.productId)?.barcode} x${l.qty}`).join(', ')} · ${request.reason}`);
+}
+/** Separate authorization: only Admin can post release; mismatch/shortage blocks ALL lines. */
+export function decideStockIssue(db:Database,id:string,approve:boolean,by:string,notes:string):Database {
+ const actor=db.users.find(u=>u.id===by&&u.active),request=(db.stockIssues||[]).find(r=>r.id===id);
+ if(!actor||actor.role!=='admin'||!request||request.status!=='Pending')throw new Error('Only Admin can review a pending release request.');
+ if(actor.id===request.createdBy)throw new Error('The request preparer cannot authorize their own stock release.');
+ if(!notes.trim()||notes.trim().length<10)throw new Error('Add review findings / reason (at least 10 characters).');
+ const pos=db.pos.find(p=>p.id===request.posId);
+ if(approve&&(!pos||pos.status!=='Pending'||pos.branch!==request.branch))throw new Error('Associated POS was closed or changed. Reject this request and investigate.');
+ const at=new Date().toISOString();
+ const movements:StockMovement[]=[];
+ if(approve){
+  for(const line of request.lines){
+   const product=db.inventory.find(p=>p.id===line.productId&&!p.archivedAt&&p.branch===request.branch);
+   if(!product||needsPriceConfiguration(product))throw new Error('Product is no longer available for issue.');
+   if(line.qty>stockAvailable(db,product))throw new Error(`${product.name}: physical stock no longer supports approval.`);
+   if(product.trackingMode==='serialized'&&!(line.unitCodes||[]).every(c=>verifiedUnitCodes(db,product.id).has(c)))throw new Error('Serialized unit is no longer available.');
+   movements.push({id:uid(),productId:product.id,branch:request.branch,kind:'StockOut',qty:line.qty,unitCost:product.unitCost,posId:request.posId,issueId:id,by,at,notes:`Admin-authorized release for ${pos!.no}: ${request.reason}; Review: ${notes.trim()}`,...(line.unitCodes?.length?{unitCodes:line.unitCodes}:{})});
+  }
+ }
+ const stockIssues=(db.stockIssues||[]).map(r=>r.id===id?{...r,status:approve?'Approved' as const:'Rejected' as const,decidedBy:by,decidedAt:at,decisionNotes:notes.trim()}:r);
+ return log({...db,stockIssues,stockMovements:approve?[...movements,...db.stockMovements]:db.stockMovements},by,approve?'Admin-authorized Stock Out posted':'Stock release rejected',`${pos?.no||request.posId} · ${request.branch} · ${request.lines.length} products · ${notes.trim()}`);
 }
 /** Multiple confirmed consumed products post together (all or nothing). */
 export function confirmStockOutBatch(db:Database,posId:string,lines:StockReceiptLine[],by:string):Database {

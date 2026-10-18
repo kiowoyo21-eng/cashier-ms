@@ -35,5 +35,5 @@ assert.equal(d.stockAvailable(cdb,product),qty,'Pending Cashier Stock In must no
 cdb=d.reviewStockReceipt(cdb,cdb.stockReceipts[0].id,true,'u-admin',true,'Verified all five units physically');assert.equal(d.stockAvailable(cdb,product),qty+5);
 // Existing v7 data must be upgradeable without deleting records.
 const legacy=d.createSeed();delete legacy.inventory;delete legacy.stockMovements;delete legacy.stockRequests;assert(!legacy.inventory);
-const page=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');assert(page.includes('Save Draft Now'));assert(page.includes('Confirm & Lock Stock Out'));assert(page.includes('Request Return'));assert(page.includes('Inventory COGS'));assert(page.includes('PB/RFP COGS'));
+const page=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');assert(page.includes('Save Draft Now'));assert(page.includes('Request Stock Release'));assert(page.includes('Request Return'));assert(page.includes('Inventory COGS'));assert(page.includes('PB/RFP COGS'));
 console.log('PASS v8: barcode inventory, per-branch stock, Draft issuance, immutable Stock Out, partial returns, Admin approval, separated COGS and no double count.');

@@ -41,7 +41,7 @@ assert.equal(db.stockMovements.find(m=>m.productId===oil.id&&m.kind==='StockOut'
 // Quotation prices are independent POS line values, not an inventory catalog setting.
 const quote={id:'q91',type:'Part',name:'Engine Oil',qty:1,price:750,cost:0};
 assert.equal(quote.price,750);assert.notEqual(quote.price,db.stockMovements.find(m=>m.productId===oil.id&&m.kind==='StockOut').unitCost);
-assert(db.audit.some(a=>a.action==='Cost Configuration completed & initial Stock In posted'));
+assert(db.audit.some(a=>a.action==='Legacy cost configuration + initial stock posting'));
 // Earlier browser data remains readable; historical sellPrice is ignored by the new workflows.
 const legacy={...savedOil,id:'legacy91',barcode:'LEGACY91',sellPrice:999,priceConfigured:undefined};
 assert.equal(d.needsCostConfiguration(legacy),false);
