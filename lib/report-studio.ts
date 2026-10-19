@@ -116,6 +116,10 @@ export function sourceToHtmlTable(source:StudioSource):string{
 export function canEditStudio(file:StudioFile,actorId:string,role:string):boolean {
  return file.ownerId===actorId&&file.status!=='Approved'&&file.status!=='Submitted';
 }
+/** Only the creator can delete unsubmitted or returned drafts. Official review records stay intact. */
+export function canDeleteStudio(file:StudioFile,actorId:string):boolean {
+ return file.ownerId===actorId&&(file.status==='Draft'||file.status==='Changes Requested');
+}
 export function canReviewStudio(file:StudioFile,actorId:string,role:string):boolean {
  return role==='admin'&&file.ownerId!==actorId&&file.status==='Submitted';
 }

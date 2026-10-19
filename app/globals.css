@@ -259,3 +259,13 @@
 .studio-period{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 14px;border:1px solid #dce5ee;border-radius:10px;background:#fbfcfe;color:#65758a;font-size:11px}
 .studio-period strong{color:#304b69}.studio-period label{display:flex;align-items:center;gap:6px}.studio-period input{border:1px solid #d6e0eb;border-radius:6px;padding:6px 8px;background:#fff;font-size:11px;color:#33445b}.studio-period small{font-size:10px;color:#8694a5}
 @media(max-width:780px){.studio-period label{width:100%;justify-content:space-between}.studio-period label input{flex:1;max-width:270px}}
+
+/* v9.4 — independent spreadsheet/document sidebar workspaces, visible file deletion */
+.studio-file-row{display:flex;align-items:stretch;gap:2px;border:1px solid transparent;border-radius:9px;min-width:0}
+.studio-file-row:hover{background:#f6f9fc}
+.studio-file-row.active{border-color:#a8c5df;background:#eef5fc}
+.studio-file-row .studio-file{flex:1;min-width:0;width:auto;border:0;background:transparent}
+.studio-file-row .studio-file:hover{background:transparent}
+.studio-file-row .studio-file-delete{align-self:center;flex-shrink:0;display:grid;place-items:center;width:32px;height:34px;margin-right:5px;border:1px solid transparent;border-radius:7px;color:#a1403b;background:transparent;cursor:pointer}
+.studio-file-row .studio-file-delete:hover,.studio-file-row .studio-file-delete:focus-visible{background:#fff0ee;border-color:#efc9c5;color:#b91c1c}
+.studio-file-row .studio-file:focus-visible{outline:2px solid #4b91d2;outline-offset:-2px}

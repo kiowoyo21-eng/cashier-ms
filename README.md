@@ -56,8 +56,10 @@ Open http://localhost:3000. Default demo users: `admin/admin12345`, `cashier/cas
 - Full Next.js build and actual camera/barcode hardware testing **were not performed**: npm dependencies could not be installed in this environment.
 - To carry over old local demo data, use the same browser and domain and **do not clear localStorage**. Export a backup using Settings before upgrading.
 
-## Report Studio (v9.3)
+## Spreadsheets & Documents (v9.4)
 
-Open **Report Studio** from the sidebar, or choose **Customize in Report Studio** on the Reports screen. Create an editable spreadsheet or formatted document, optionally loaded from a filtered transaction report snapshot. Staff can submit finished reports to Admin for review; approved copies are locked. Spreadsheet formulas and CSV export, document formatting and Word-compatible .doc export, and print/PDF preview are supported. An edited sheet may also be converted into a document.
+Choose **Spreadsheets** or **Documents** directly from the main sidebar, or use the separate shortcuts on **Reports & Exports**. Each is a standalone workspace with its own file list and create action. Create editable spreadsheet reports or formatted documents, optionally starting from a filtered transaction report snapshot. Staff can submit finished reports for Admin review; submitted and approved copies are locked. Spreadsheet formulas and CSV export, document formatting and Word-compatible .doc export, and print/PDF preview are supported. A spreadsheet can also be converted directly into the Documents workspace.
 
-**Demo limitations:** Files are stored only in this browser (`uc_report_studio_v1`) and do not sync across machines. Report drafts do not affect source ledger records. Spreadsheet CSV export and Word-compatible `.doc` export are provided; native `.xlsx`/`.docx` and secure backend approvals are not implemented. See `REVISION_STATUS_V9_3.md` for details and limits.
+Use the **trash icon** beside an individual saved file or **Delete File** in its editor to remove files you own in **Draft** or **Changes Requested** status. Deletion always requests confirmation. Submitted/approved files cannot be deleted in this frontend workflow to preserve the review trail.
+
+**Demo limitations:** Files are stored only in this browser (`uc_report_studio_v1`) and do not sync across machines. Report drafts do not affect source ledger records. Spreadsheet CSV export and Word-compatible `.doc` export are provided; native `.xlsx`/`.docx` and secure backend approvals are not implemented. See `REVISION_STATUS_V9_4.md` for the separate workspaces and deletion policy.
