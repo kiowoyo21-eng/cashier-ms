@@ -55,3 +55,9 @@ Open http://localhost:3000. Default demo users: `admin/admin12345`, `cashier/cas
 - `lib/data.ts` passed standalone TypeScript type checking; changed TSX files passed TypeScript parsing/transpilation.
 - Full Next.js build and actual camera/barcode hardware testing **were not performed**: npm dependencies could not be installed in this environment.
 - To carry over old local demo data, use the same browser and domain and **do not clear localStorage**. Export a backup using Settings before upgrading.
+
+## Report Studio (v9.3)
+
+Open **Report Studio** from the sidebar, or choose **Customize in Report Studio** on the Reports screen. Create an editable spreadsheet or formatted document, optionally loaded from a filtered transaction report snapshot. Staff can submit finished reports to Admin for review; approved copies are locked. Spreadsheet formulas and CSV export, document formatting and Word-compatible .doc export, and print/PDF preview are supported. An edited sheet may also be converted into a document.
+
+**Demo limitations:** Files are stored only in this browser (`uc_report_studio_v1`) and do not sync across machines. Report drafts do not affect source ledger records. Spreadsheet CSV export and Word-compatible `.doc` export are provided; native `.xlsx`/`.docx` and secure backend approvals are not implemented. See `REVISION_STATUS_V9_3.md` for details and limits.
