@@ -112,7 +112,7 @@ export default function ReportStudio({mode,fileId,userId,userName,role,branch,so
   if(!active)return;
   if(mode==='sheet'){
    const last=Math.max(0,...active.rows.map((r,i)=>r.some(v=>v.trim())?i:0));
-   const csv='\uFEFF'+active.rows.slice(0,last+1).map(row=>row.map((_,c)=>escapeStudioCsv(displayCell(active.rows,r,c))).join(',')).join('\r\n');
+   const csv='\uFEFF'+active.rows.slice(0,last+1).map((row,r)=>row.map((_,c)=>escapeStudioCsv(displayCell(active.rows,r,c))).join(',')).join('\r\n');
    downloadFile(`${safeName(active.title)}.csv`,csv,'text/csv;charset=utf-8');
   }else downloadFile(`${safeName(active.title)}.doc`,`<html><head><meta charset="utf-8"></head><body>${sanitizeHtml(active.html)}</body></html>`,'application/msword');
  };

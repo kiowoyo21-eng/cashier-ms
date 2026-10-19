@@ -51,4 +51,7 @@ for(const file of ['app/page.tsx','components/StudioRoute.tsx','components/Repor
  const parsed=ts.transpileModule(read(file),{fileName:file,reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.Preserve}});
  assert.equal((parsed.diagnostics||[]).filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,`TypeScript parse: ${file}`);
 }
+// Regression: CSV export must bind the row index used by displayCell.
+// transpileModule parses TSX but does not perform semantic name-resolution.
+assert.match(editor,/active\.rows\.slice\(0,last\+1\)\.map\(\(row,r\)=>row\.map\(\(_,c\)=>escapeStudioCsv\(displayCell\(active\.rows,r,c\)\)\)/, 'CSV export row index r must be declared in the map callback');
 console.log('PASS v9.6: Vercel-relative /docs & /sheets, file URLs, secure login return, old links redirect, storage compatibility, syntax.');
