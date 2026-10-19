@@ -19,17 +19,14 @@ for (const match of app.matchAll(navRole)) {
   assert.doesNotMatch(match[1], /key:'studio'/);
 }
 assert.equal(roles,3, 'All user roles must have independent spreadsheet and document main navigation');
-assert.match(app, /view==='spreadsheets'\|\|view==='documents'/);
-assert.match(app, /mode=\{view==='spreadsheets'\?'sheet':'document'\}/);
-assert.match(app, /onNavigateKind=\{kind=>goto\(kind==='sheet'\?'spreadsheets':'documents'\)\}/);
-assert.match(component,/visibleFiles=allowedFiles\.filter\(f=>f\.kind===mode/,'Lists must only show files in the current workspace');
-assert.match(component,/const nextKind=mode/,'New files must match selected workspace');
-assert.match(component,/onNavigateKind\('document'\)/,'Convert to document should navigate to its own page');
-assert.match(component,/className="studio-file-delete"/,'File deletion must be available from file list');
-assert.match(component,/onClick=\{\(\)=>remove\(active\)\}/,'File deletion must be available from editor');
-assert.match(component,/window\.confirm\(`/,'Deletion should request confirmation');
-assert.match(style,/\.studio-file-row \.studio-file-delete/,'Delete button needs visible styling');
-assert.match(pkg.version,/^9\.4\./);
+assert.match(app, /href=\{studioHomeHref\(item\.key===/, 'Nav links must navigate to canonical standalone pages');
+assert.doesNotMatch(app, /<ReportStudio/, 'Editors must not be embedded inside the cashier dashboard');
+assert.match(app,/window\.location\.assign\(studioHomeHref\(/,'Reports shortcuts must navigate to canonical pages');
+assert.match(component,/studioFileHref\(f\)/,'File listing links to individual file pages');
+assert.match(component,/canDeleteStudio\(f,userId\)/,'Delete available on owned drafts');
+assert.match(component,/window\.confirm\(`/,'Delete requires confirmation');
+assert.match(style,/\.office-global-head/, 'Standalone layout needs its own header');
+assert.match(pkg.version,/^9\.[56]\./);
 const compiled = ts.transpileModule(data, {fileName:'report-studio.ts',compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
 const moduleObj = {exports:{}};
 vm.runInNewContext(`(function(require,module,exports){${compiled}\n})`, {console,Intl,Date}, {filename:'report-studio.js'})((id)=>id==='./data'?{}:require(id),moduleObj,moduleObj.exports);
@@ -43,4 +40,4 @@ for(const status of ['Changes Requested','Submitted','Approved']) {
   assert.equal(s.canDeleteStudio(template,'user-b'),false,'Others cannot delete files at any status');
 }
 assert.equal(s.STUDIO_KEY,'uc_report_studio_v1','Retain existing browser drafts after upgrade');
-console.log('v9.4 tests passed: main tabs, filtering, conversions, delete controls, review safeguards, storage compatibility.');
+console.log('v9.5-compatible workspaces: standalone navigation, own file listing, delete controls, review safeguards, storage compatibility.');

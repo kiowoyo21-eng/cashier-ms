@@ -12,6 +12,16 @@ export interface StudioFile {
 }
 export interface StudioSource {id:string; label:string; headers:string[]; rows:(string|number)[][];}
 export const STUDIO_KEY = 'uc_report_studio_v1';
+/** Same-origin paths: these work on any Vercel preview, production or custom domain. */
+export const studioHomeHref=(kind:StudioKind)=>kind==='sheet'?'/sheets':'/docs';
+export const studioFileHref=(file:Pick<StudioFile,'kind'|'id'>)=>`${studioHomeHref(file.kind)}/${encodeURIComponent(file.id)}`;
+/** Permit only internal standalone office routes as a post-login return target. */
+export function safeStudioReturnPath(value:string|null):string|null {
+ if(!value||!/^\/(?:docs|sheets|documents|spreadsheets)(?:\/[A-Za-z0-9_-]{1,140})?\/?$/.test(value))return null;
+ // Normalize legacy login links to the new canonical workspaces, without open redirects.
+ return value.replace(/^\/documents(?=\/|$)/,'/docs').replace(/^\/spreadsheets(?=\/|$)/,'/sheets');
+}
+
 export const SHEET_MAX_ROWS = 250;
 export const SHEET_MAX_COLS = 26;
 export const DEFAULT_SHEET_ROWS = 24;

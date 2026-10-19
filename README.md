@@ -63,3 +63,31 @@ Choose **Spreadsheets** or **Documents** directly from the main sidebar, or use 
 Use the **trash icon** beside an individual saved file or **Delete File** in its editor to remove files you own in **Draft** or **Changes Requested** status. Deletion always requests confirmation. Submitted/approved files cannot be deleted in this frontend workflow to preserve the review trail.
 
 **Demo limitations:** Files are stored only in this browser (`uc_report_studio_v1`) and do not sync across machines. Report drafts do not affect source ledger records. Spreadsheet CSV export and Word-compatible `.doc` export are provided; native `.xlsx`/`.docx` and secure backend approvals are not implemented. See `REVISION_STATUS_V9_4.md` for the separate workspaces and deletion policy.
+
+## v9.5 — Standalone Office Workspaces (important navigation change)
+
+This release fixes the earlier **mini-tab** problem. **Spreadsheets and Documents no longer render inside the Cashier System main dashboard**. They are independently addressable Next.js App Router pages:
+
+- `https://<your-vercel-project>.vercel.app/sheets` — Spreadsheet file library
+- `https://<your-vercel-project>.vercel.app/sheets/<file-id>` — Full-page spreadsheet editor
+- `https://<your-vercel-project>.vercel.app/docs` — Document file library
+- `https://<your-vercel-project>.vercel.app/docs/<file-id>` — Full-page document editor
+
+In the original Cashier System, click **Spreadsheets** or **Documents** in the main sidebar. Each opens its respective dedicated page with an Office-style top navigation (Cashier System / Spreadsheets / Documents). Your recent files also appear directly on **Reports & Exports → Connected Spreadsheets & Documents**, so the system retains clickable links to individual files.
+
+**Workspaces:** separate file-library landing pages, new blank/imported files, full-width spreadsheet grid and formula bar, multi-cell TSV paste, a document editing page with heading/text/list formatting, rename, copy file, copy local URL, auto-save, CSV or Word-compatible `.doc` export, and print/save as PDF. The owner can delete editable drafts and returned files after confirmation. Submitted and approved files remain locked; Admin can review others' submitted files. Conversion from a spreadsheet to a document creates a new linked file.
+
+**Existing data:** v9.3/v9.4 saved files are retained under the unchanged browser storage key `uc_report_studio_v1`. Use the **same origin and browser storage** (`localhost` vs a different hostname/port counts as a different origin). Original POS, fund, stock and inventory data is **read-only source data** for snapshot imports; report edits cannot post to the ledger.
+
+**Independent file links are not cloud shares.** These routes are real links, but a file exists only in the current browser's localStorage. A browser session must be active. Opening a URL while signed out takes you back to Cashier System sign-in and returns to the document after login in the same tab. Other devices cannot open those files until a shared database and proper authentication/storage are connected. This is a streamlined, Google-like editing experience, **not** the full Google Docs/Sheets feature set (no cloud collaboration, simultaneous editing, real-time syncing or native `.xlsx`/`.docx` exports).
+
+Run `npm run test:studio` or `npm run test:logic`. v9.5 tests cover route locations, safe return-to-file links, stored-file compatibility, role permissions, deletes, editors and all previously shipped logic. A full Next.js production build and visual browser testing still require `npm install` and a supported browser (not available in the current packaging environment).
+
+
+## v9.6 — Vercel-first Docs and Sheets links
+
+Deploy this Next.js project to your existing **Vercel project**. The app works at `https://YOUR-PROJECT.vercel.app/`; navigate to `/docs` for documents or `/sheets` for spreadsheets. There is **no hard-coded hostname** in application navigation: `studioHomeHref` and `studioFileHref` use root-relative URLs and therefore work on the actual Vercel production/preview hostname or a custom domain without needing environment variables. A file URL is `/docs/<file-id>` or `/sheets/<file-id>`.
+
+Previous `/documents` and `/spreadsheets` links issue temporary redirects to the new routes. Existing stored report files retain the same `uc_report_studio_v1` storage key and no data conversion is needed **if the deployment origin and browser profile remain the same**. After deployment, open `/docs` and `/sheets` on your real project hostname. The `localhost` URL above is only a local developer example.
+
+**Important:** Vercel hosts the editor pages, not the files: report content still exists only in browser localStorage, and demo login session uses sessionStorage. URL sharing to another device is not possible until shared authenticated storage/database is built. `/docs` and `/sheets` are not third-party Google editors. This release does not deploy or change DNS/Vercel project settings.
