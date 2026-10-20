@@ -1,3 +1,7 @@
+# v9.15 — Downpayment-first POS Wizard
+
+See `REVISION_STATUS_V9_15.md`. This is still a frontend-only prototype.
+
 # v9.11 — Receipt-style POS and COGS Review
 
 For the latest changes, see `REVISION_STATUS_V9_11.md`.

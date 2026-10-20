@@ -535,3 +535,16 @@
 .draft-history-item:first-of-type{margin-top:9px}
 .draft-history-item small{color:#7b828c}
 @media(max-width:560px){.receipt-inline-editor .receipt-head,.receipt-inline-row{grid-template-columns:minmax(0,1.5fr) 44px minmax(83px,1fr);gap:5px}.receipt-inline-editor{padding:8px}.receipt-inline-row .receipt-input{font-size:11px!important}.receipt-inline-row-meta{font-size:9px}.receipt-add-row{margin-bottom:18px}}
+
+/* v9.15 — Downpayment and final-quotation wizard */
+.wizard-pos .pos-stepper{grid-template-columns:repeat(auto-fit,minmax(112px,1fr))}
+.pos-dp-choice{margin:16px 0;padding:16px;border:1px solid #e5e8ef;border-radius:12px;background:#f9fafc;display:grid;gap:8px}
+.pos-dp-choice>strong{font-size:13px;color:#27313e}
+.pos-dp-choice>p{margin:0;line-height:1.55}
+.pos-dp-choice>.button{justify-self:start}
+.pos-first-quotation{border:1px solid #e3e7ec;border-radius:10px;background:white;overflow:hidden;margin:12px 0 16px}
+.pos-first-quotation .payment-row{gap:14px;align-items:center}
+.pos-first-quotation .payment-row:first-child{background:#f6f8fa}
+.pos-first-quotation .payment-row>strong,.pos-first-quotation .payment-row>span{white-space:nowrap;font-size:12px;font-variant-numeric:tabular-nums}
+.wizard-pos .pos-totals{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:540px){.wizard-pos .pos-stepper{grid-template-columns:repeat(2,minmax(0,1fr))}.wizard-pos .pos-totals{grid-template-columns:1fr}.pos-dp-choice>.button{width:100%;justify-content:center}}

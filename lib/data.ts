@@ -41,6 +41,9 @@ export interface FundEntry {
   /** Frontend-only review stages. Production Accounting and President approvals must be authenticated through shared Supabase. */
   accountingStatus?:'Pending'|'Verified'|'Returned';presidentStatus?:'Pending'|'Approved'|'Rejected';
   accountingBy?:string;accountingAt?:string;presidentBy?:string;presidentAt?:string;receivedAt?:string;
+  /** Internal routing for replenishment disbursements. Legacy records without it remain viewable. */
+  requestedApproverId?:string;disbursementReviewStatus?:'Pending'|'Approved'|'Returned';
+  disbursementReviewedBy?:string;disbursementReviewedAt?:string;disbursementReviewNote?:string;
 }
 export type InventoryCategory = 'Automotive Parts & Products'|'Shop Supplies';
 export interface InventoryProduct {id:string;barcode:string;name:string;category:InventoryCategory;branch:BranchId;unit:string;/** Legacy stored value; not used for POS pricing. */sellPrice?:number;unitCost:number;openingQty:number;reorderAt:number;createdAt:string;updatedAt?:string;updatedBy?:string;archivedAt?:string;trackingMode?:'quantity'|'serialized';priceConfigured?:boolean;pendingInitialQty?:number;pendingUnitCodes?:string[];}
@@ -58,7 +61,7 @@ export interface POSPayment {id:string;mode:'Cash'|'GCash'|'Bank Transfer'|'Card
 export interface TerminalEvent {id:string;branch:BranchId;mode:'GCash'|'Bank Transfer'|'Card';kind:'Payment'|'Declined'|'Void'|'Refund';provider:string;terminalId:string;reference:string;amount:number;date:string;notes:string;posId?:string;paymentId?:string;originalEventId?:string;createdBy:string;createdAt:string;}
 export interface TerminalSettlement {id:string;branch:BranchId;date:string;provider:string;terminalId:string;batchRef:string;expected:number;reportedTotal:number;variance:number;unmatchedAtSubmission:number;exceptionCountAtSubmission:number;notes:string;recordedBy:string;recordedAt:string;status:'Pending'|'Verified'|'Flagged';supersedesId?:string;reviewedBy?:string;reviewedAt?:string;reviewNotes?:string;}
 export interface POSDraftHistory {revision:number;at:string;by:string;action:string;before?:{client:string;phone:string;vehicle:string;plate:string;concern:string;date:string;items:Partial<POSLine>[];cogsReviewedAt?:string};after:{client:string;phone:string;vehicle:string;plate:string;concern:string;date:string;items:Partial<POSLine>[];cogsReviewedAt?:string};}
-export interface POS {id:string;no:string;branch:BranchId;date:string;client:string;phone:string;vehicle:string;plate:string;concern:string;items:POSLine[];payments:POSPayment[];draftHistory?:POSDraftHistory[];status:'Pending'|'Closed';parentId?:string;createdBy:string;createdAt:string;closedAt?:string;cogsReviewedAt?:string;cogsReviewedBy?:string;}
+export interface POS {id:string;no:string;branch:BranchId;date:string;client:string;phone:string;vehicle:string;plate:string;concern:string;items:POSLine[];payments:POSPayment[];draftHistory?:POSDraftHistory[];firstQuotation?:{items:POSLine[];saleTotal:number;savedAt:string;savedBy:string};quotationPhase?:'Initial'|'Final';status:'Pending'|'Closed';parentId?:string;createdBy:string;createdAt:string;closedAt?:string;cogsReviewedAt?:string;cogsReviewedBy?:string;}
 export interface DeletedPOSDraft {id:string;no:string;branch:BranchId;plate:string;deletedAt:string;deletedBy:string;reason:string;original:POS;}
 export interface Count {id:string;branch:BranchId;userId:string;date:string;kind:'BOD'|'EOD';actual:number;expected:number;difference:number;notes:string;createdAt:string;denominations?:Record<string,number>;signature?:string;scope?:'Sales Cash'|'RF'|'RFP';}
 export interface Incident {id:string;branch:BranchId;userId:string;date:string;type:'Missed Opening'|'Missed Closing'|'Missed Sales Turnover'|'Cash Discrepancy'|'Expense Explanation';detail:string;status:'Required'|'Submitted'|'Reviewed';explanation:string;createdAt:string;submittedAt?:string;entryId?:string;reviewedAt?:string;}
@@ -418,6 +421,7 @@ export function pendingIssueQty(db:Database,productId:string,excludingIssueId=''
 export function requestStockIssue(db:Database,posId:string,lines:StockReceiptLine[],reason:string,by:string):Database {
  const actor=db.users.find(u=>u.id===by&&u.active),pos=db.pos.find(p=>p.id===posId);
  if(!actor||actor.role!=='cashier'||!pos||pos.branch!==actor.branch||pos.status!=='Pending')throw new Error('Stock release requires your branch Cashier and an existing open POS.');
+ if(pos.quotationPhase==='Initial')throw new Error('Finish Final Quotation and COGS Review before requesting stock release on a downpayment POS.');
  if(!pos.plate.trim()||!pos.client.trim())throw new Error('Complete the POS plate number and customer before requesting stock release.');
  if(!reason.trim()||reason.trim().length<12)throw new Error('Describe the customer job / why these items are needed (at least 12 characters).');
  if(!lines.length)throw new Error('Scan at least one product.');

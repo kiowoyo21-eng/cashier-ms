@@ -1,4 +1,5 @@
 import {log,paidTotal,posTotal,todayPH,uid,type BranchId,type Database,type POSPayment,type TerminalEvent,type TerminalSettlement,type User} from './data';
+import {costReviewIssues} from './pos-cogs-review';
 
 export type TerminalMode = Exclude<POSPayment['mode'],'Cash'>;
 export type TerminalEventKind = TerminalEvent['kind'];
@@ -29,6 +30,8 @@ export function recordPOSPayment(db:Database,posId:string,mode:POSPayment['mode'
  const u=cashier(db,userId),pos=db.pos.find(p=>p.id===posId);
  if(!pos||pos.branch!==u.branch||pos.status!=='Pending')throw new Error('Payments require an open POS in your own branch.');
  const value=amountCheck(amount),remaining=two(posTotal(pos)-paidTotal(pos));
+ const isInitialDownpayment=pos.quotationPhase==='Initial'&&pos.payments.length===0&&!pos.cogsReviewedAt&&value<remaining-0.004;
+ if(!isInitialDownpayment&&(pos.quotationPhase==='Initial'||!pos.cogsReviewedAt||costReviewIssues(pos.items).length))throw new Error('Complete Final Quotation and COGS Review before additional or full payment. Only the initial partial downpayment may bypass costing.');
  if(value>remaining+0.000001)throw new Error(`Payment exceeds the remaining POS balance (₱${remaining.toFixed(2)}).`);
  let event:TerminalEvent|undefined;
  const payment:POSPayment={id:uid(),mode,amount:value,date:details?.date||todayPH()};
@@ -73,6 +76,7 @@ export function linkUnmatchedTerminalToOpenPOS(db:Database,eventId:string,posId:
  const u=cashier(db,userId),event=terminalEvents(db).find(e=>e.id===eventId),pos=db.pos.find(p=>p.id===posId);
  if(!event||event.kind!=='Payment'||event.paymentId||event.branch!==u.branch)throw new Error('Choose an unmatched approved terminal payment for your branch.');
  if(!pos||pos.status!=='Pending'||pos.branch!==u.branch)throw new Error('Choose a matching open POS in the same branch.');
+ if(pos.quotationPhase==='Initial'||!pos.cogsReviewedAt||costReviewIssues(pos.items).length)throw new Error('Unmatched terminal payments cannot be linked until Final Quotation and COGS Review are approved.');
  const remaining=two(posTotal(pos)-paidTotal(pos));
  if(event.amount>remaining+0.000001)throw new Error('Terminal payment exceeds the remaining POS balance.');
  const payment:POSPayment={id:uid(),mode:event.mode,amount:event.amount,date:event.date,provider:event.provider,terminalId:event.terminalId,reference:event.reference};

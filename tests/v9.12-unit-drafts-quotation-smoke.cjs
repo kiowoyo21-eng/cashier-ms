@@ -16,8 +16,8 @@ try{
  let revised=control.saveUnitPOSDraft(result.db,make('random','UCM-POS-999',branch,[{...line,lineTotal:650,price:325}]),cashier.id);
  assert.equal(revised.db.pos.length,1,'Same branch + unit updates, no second draft');assert.equal(revised.pos.id,'visit1');assert.equal(revised.pos.no,'UCM-POS-00000001');assert.equal(revised.pos.draftHistory.length,2);assert.equal(revised.pos.draftHistory[1].before.items[0].lineTotal,500);assert.equal(revised.pos.draftHistory[1].after.items[0].lineTotal,650);
  let unchanged=control.saveUnitPOSDraft(revised.db,make('ignored','ignored',branch,[{...line,lineTotal:650,price:325}]),cashier.id);assert.equal(unchanged.changed,false,'Unchanged save does not create junk revision');
- const paid={...revised.pos,payments:[{id:'pay1',mode:'Cash',amount:100,date:'2026-10-20'}]};assert.match(control.cannotReviseDraft({...revised.db,pos:[paid]},paid),/Payment/);
- assert.throws(()=>control.saveUnitPOSDraft({...revised.db,pos:[paid]},make('new','new'),cashier.id),/Payment/);
+ const paid={...revised.pos,payments:[{id:'pay1',mode:'Cash',amount:100,date:'2026-10-20'}]};assert.equal(control.cannotReviseDraft({...revised.db,pos:[paid]},paid),null,'Partially paid drafts can be revised');
+ assert.throws(()=>control.saveUnitPOSDraft({...revised.db,pos:[paid]},make('new','new',branch,[{...line,lineTotal:30,price:30}]),cashier.id),/already received payments/);
  const posted={...revised.db,stockMovements:[{id:'stock1',posId:'visit1',kind:'StockOut',qty:1}]};assert.match(control.cannotReviseDraft(posted,revised.pos),/Posted stock/);
  const closed={...revised.pos,status:'Closed',closedAt:'2026-10-21'};const completed={...revised.db,pos:[closed]};assert.equal(control.unitVisitDecision(completed,'abc123',other).kind,'new');assert.equal(control.saveUnitPOSDraft(completed,make('second','UCO-POS-1',other),cashier.id).db.pos.length,2);
  const conflicting={...revised.db,pos:[...revised.db.pos,make('second','another',other)]};assert.equal(control.unitVisitDecision(conflicting,'abc123',branch).kind,'conflict');

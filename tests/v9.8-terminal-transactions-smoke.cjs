@@ -9,7 +9,7 @@ try{
  assert.equal(compile.status,0,compile.stdout+'\n'+compile.stderr);
  const D=require(path.join(out,'data.js')),T=require(path.join(out,'terminal.js'));
  const db=require('./legacy-fixture.cjs')(D),date=D.todayPH();
- const pos={...db.pos[0],id:'tx-pos',no:'UCM-POS-10009999',items:[{id:'i1',type:'Service',name:'Labor',qty:1,price:1500,cost:100}],payments:[],status:'Pending',createdBy:'u-cashier'};
+ const pos={...db.pos[0],id:'tx-pos',no:'UCM-POS-10009999',items:[{id:'i1',type:'Service',name:'Labor',qty:1,price:1500,cost:100,costSource:'Direct',supplier:'In-house'}],cogsReviewedAt:'2026-10-20T03:00:00.000Z',payments:[],status:'Pending',createdBy:'u-cashier'};
  let state={...db,pos:[pos,...db.pos]};
  const meta={provider:'Maya',terminalId:'TER-01',reference:'RRN-0000001',date};
  const beforeSales=state.pos.reduce((n,p)=>n+D.paidTotal(p),0);

@@ -1,4 +1,4 @@
-import {log,normalizePlate,posTotal,type Database,type POS,type POSLine,type BranchId} from './data';
+import {log,normalizePlate,paidTotal,posTotal,type Database,type POS,type POSLine,type BranchId} from './data';
 
 /** A unit's active visit is global to all branches in the CURRENT datastore. */
 export function openUnitVisits(db:Database,rawPlate:string):POS[]{
@@ -15,7 +15,7 @@ export function unitVisitDecision(db:Database,rawPlate:string,branch:BranchId):{
 }
 export function cannotReviseDraft(db:Database,pos:POS):string|null{
  if(pos.status!=='Pending')return 'Closed POS transactions cannot be edited.';
- if(pos.payments.length)return 'Payment has already started. Quotation changes are locked.';
+ if(pos.payments.length&&paidTotal(pos)>=posTotal(pos)-0.005)return 'Fully paid POS cannot be revised. Request an authorized correction if needed.';
  if((db.stockMovements||[]).some(m=>m.posId===pos.id&&m.kind==='StockOut'))return 'Posted stock consumption exists. Quotation is locked to protect inventory and costing.';
  if((db.stockIssues||[]).some(x=>x.posId===pos.id&&x.status!=='Rejected'))return 'Stock release requests exist for this POS. Complete/reconcile the release before editing the quotation.';
  return null;
@@ -38,14 +38,18 @@ export function saveUnitPOSDraft(db:Database,candidate:POS,by:string):{db:Databa
  if(decision.kind==='resume'){
   const old=decision.visit!;
   const reason=cannotReviseDraft(db,old);if(reason)throw new Error(reason);
+  if(old.payments.length&&posTotal(candidate)+0.005<paidTotal(old))throw new Error(`New quotation total cannot be below the already received payments (₱${paidTotal(old).toFixed(2)}).`);
   const oldData=snapshotPOS(old);
   const nextData=snapshotPOS(candidate);
   const realChange=JSON.stringify({...oldData,cogsReviewedAt:undefined})!==JSON.stringify({...nextData,cogsReviewedAt:undefined});
-  const same:POS={...old,client:candidate.client,phone:candidate.phone,vehicle:candidate.vehicle,concern:candidate.concern,date:candidate.date,items:candidate.items,cogsReviewedAt:realChange?candidate.cogsReviewedAt:old.cogsReviewedAt,cogsReviewedBy:realChange?candidate.cogsReviewedBy:old.cogsReviewedBy};
-  const revised=reviseDraftHistory(old,same,by,'Quotation and COGS revised');
+  const phaseChanged=candidate.quotationPhase==='Final'&&old.quotationPhase==='Initial';
+  const same:POS={...old,client:candidate.client,phone:candidate.phone,vehicle:candidate.vehicle,concern:candidate.concern,date:candidate.date,items:candidate.items,firstQuotation:old.firstQuotation||candidate.firstQuotation,quotationPhase:candidate.quotationPhase||old.quotationPhase,cogsReviewedAt:realChange||phaseChanged?candidate.cogsReviewedAt:old.cogsReviewedAt,cogsReviewedBy:realChange||phaseChanged?candidate.cogsReviewedBy:old.cogsReviewedBy};
+  let revised=reviseDraftHistory(old,same,by,phaseChanged?'Final quotation and COGS approved':'Quotation and COGS revised');
+  // Identical item rows still constitute a meaningful signed-off final quotation stage.
+  if(phaseChanged&&revised===old){const history=old.draftHistory||[];revised={...same,draftHistory:[...history,{revision:history.length+1,at:new Date().toISOString(),by,action:'Final quotation continued from original',before:snapshotPOS(old),after:snapshotPOS(same)}]};}
   if(revised===old)return {db,pos:old,created:false,changed:false};
   const updated={...db,pos:db.pos.map(p=>p.id===old.id?revised:p)};
-  return {db:log(updated,by,'POS draft revised',`${old.no} · ${old.plate} · Revision ${revised.draftHistory?.length} · ${posTotal(revised).toFixed(2)}`),pos:revised,created:false,changed:true};
+  return {db:log(updated,by,old.payments.length?'Partially paid POS draft revised':'POS draft revised',`${old.no} · ${old.plate} · Revision ${revised.draftHistory?.length} · total ${posTotal(old).toFixed(2)} → ${posTotal(revised).toFixed(2)} · received ${paidTotal(old).toFixed(2)} (preserved)`),pos:revised,created:false,changed:true};
  }
  const created=reviseDraftHistory(undefined,candidate,by,'Draft created');
  return {db:log({...db,pos:[created,...db.pos]},by,'POS draft created',`${created.no} · ${created.plate} · ${posTotal(created).toFixed(2)}`),pos:created,created:true,changed:true};
