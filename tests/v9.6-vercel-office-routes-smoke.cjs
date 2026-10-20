@@ -46,7 +46,7 @@ assert.match(home,/href=\{studioFileHref\(f\)\}/,'Cashier links must point to ca
 assert.match(home,/window\.location\.assign\(studioHomeHref/);
 assert.match(route,/studioHomeHref\(kind\)/,'login return path is canonical');
 assert.match(editor,/router\.push\(studioFileHref\(file\)\)/,'new files use canonical URL');
-assert.match(read('public/sw.js'),/uc-fund-shell-v9-[6789]/);
+assert.match(read('public/sw.js'),/uc-fund-shell-v9-(?:[6-9]|1[01])/);
 for(const file of ['app/page.tsx','components/StudioRoute.tsx','components/ReportStudio.tsx','app/docs/page.tsx','app/docs/[fileId]/page.tsx','app/sheets/page.tsx','app/sheets/[fileId]/page.tsx','next.config.ts']){
  const parsed=ts.transpileModule(read(file),{fileName:file,reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.Preserve}});
  assert.equal((parsed.diagnostics||[]).filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,`TypeScript parse: ${file}`);

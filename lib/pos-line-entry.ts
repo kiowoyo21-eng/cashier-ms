@@ -13,7 +13,6 @@ export function posLineError(line:POSLineDraft):string|null{
  if(!/^(?:\d+)(?:\.\d{1,2})?$/.test(line.price)||Number(line.price)<=0||Number(line.price)>MAX_POS_UNIT_PRICE)return 'Selling price must be greater than ₱0, with up to 2 decimal places.';
  const cost=line.cost.trim()===''?'0':line.cost;
  if(!/^(?:\d+)(?:\.\d{1,2})?$/.test(cost)||Number(cost)>MAX_POS_UNIT_PRICE)return 'Internal unit cost must be zero or more, with up to 2 decimal places.';
- if(Number(line.cost)>Number(line.price))return 'Internal cost cannot exceed the selling price.';
  return null;
 }
 export function posLineAmount(qty:string|number,price:string|number):number{

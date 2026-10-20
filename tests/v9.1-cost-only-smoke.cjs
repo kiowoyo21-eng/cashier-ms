@@ -58,5 +58,5 @@ assert(costUI.includes('Save All Costs')&&costUI.includes('Save Unit Cost'));
 assert(!costUI.includes('<span>Selling Price (₱)</span>'));
 const editProductUI=page.slice(page.indexOf("{dialog==='editProduct'"),page.indexOf("{dialog==='stockOut'"));
 assert(!editProductUI.includes('label="Selling Price'), 'Admin Edit Product must not show a fixed selling price');
-assert(page.includes('POSLineComposer') && fs.readFileSync(path.join(root,'components/POSLineComposer.tsx'),'utf8').includes('Selling price / unit'), 'POS quotations must retain per-transaction selling price');
+assert(page.includes('POSLineComposer') && fs.readFileSync(path.join(root,'components/POSLineComposer.tsx'),'utf8').includes('Selling Price'), 'POS quotations must retain per-transaction selling price');
 console.log('PASS v9.1: Admin scan/name/submit, cost-only configuration, no fixed inventory selling price, posted stock and immutable COGS, POS independent selling price, and legacy compatibility.');

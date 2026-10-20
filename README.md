@@ -1,3 +1,7 @@
+# v9.11 — Receipt-style POS and COGS Review
+
+For the latest changes, see `REVISION_STATUS_V9_11.md`.
+
 # Underchargers Fund Management System — Frontend PWA v9.9
 
 Next.js / React / TypeScript responsive PWA for Admin, Cashier, and Parts Buyer. This is a **browser-local frontend prototype**. No Supabase connection, trusted server, multi-device synchronization, or tamper-resistant access control exists yet.

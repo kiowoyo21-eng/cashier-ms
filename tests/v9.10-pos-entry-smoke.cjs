@@ -14,7 +14,7 @@ try{
  assert.equal(lib.posLineAmount(3,.1),.3,'Perform line totals in centavos');
  for(const qty of ['0','-1','1.5','1e3','10000','', 'NaN'])assert.match(lib.posLineError({...item,qty}),/Quantity/);
  for(const price of ['0','-1','2.999','1e3','', '100000000'])assert.match(lib.posLineError({...item,price}),/Selling price/);
- assert.match(lib.posLineError({...item,cost:'1600'}),/cost cannot exceed/i);
+ assert.equal(lib.posLineError({...item,cost:'1600'}),null,'Cost exceeding selling price is valid but indicates negative margin');
  assert.match(lib.posLineError({...item,cost:'-1'}),/cost/i);
  assert.equal(lib.posLineError({...item,cost:''}),null,'Optional internal cost accepts blank');
  assert.equal(lib.posLineNumbers({...item,cost:''}).cost,0);

@@ -40,11 +40,11 @@ try{
  const ts=require('typescript');
  const parsed=ts.createSourceFile('app/page.tsx',app,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(parsed.parseDiagnostics.length,0,'POS JSX must remain valid');
- assert(app.includes('1 · Customer & Vehicle')&&app.includes('2 · Add Items & Save'));
- assert(!app.includes('3 · COGS & Review'));
- assert(app.includes('Save Draft & Open Payments')&&app.includes('Pay remaining'));
+ assert(app.includes('1 · Vehicle')&&app.includes('2 · Quotation')&&app.includes('3 · COGS Review')&&app.includes('4 · Payment'));
+ assert(app.includes('costReviewIssues(wizardLines)')); 
+ assert(app.includes('Confirm COGS & Continue to Payment')&&app.includes('Pay remaining'));
  assert(app.includes("wizardLine.type==='Part'&&db.inventory.some"),'Registered parts cannot bypass controlled stock release');
  assert(app.includes('Internal costing and Parts Buyer breakdown (optional)'));
  assert(app.includes('Terminal / Device ID')&&app.includes('Close POS'));
- console.log('PASS v9.9: fresh records empty, only exact legacy fixtures migrated, real records retained, protected POS references, 2-step UI and stock/terminal safeguards');
+ console.log('PASS v9.9: fresh records empty, only exact legacy fixtures migrated, real records retained, protected POS references, quotation/COGS/payment UI and stock/terminal safeguards');
 }finally{fs.rmSync(out,{recursive:true,force:true});}

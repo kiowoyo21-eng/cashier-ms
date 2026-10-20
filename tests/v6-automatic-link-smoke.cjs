@@ -19,11 +19,11 @@ const after=d.linkPartsOnSale(linked,{...sale,id:'another'});assert.deepEqual(af
 linked.fundEntries.push(expense('third','UCQC','214UWI','Tire','Other',1,700));linked.fundEntries.push(expense('rejected','UCM','214UWI','Gear','Other',1,100,{status:'Rejected'}));
 const cross=d.linkPartsOnSale(linked,{...sale,id:'visit3'});assert.equal(cross.fundEntries.find(e=>e.id==='third').linkedPosId,undefined,'Branch isolated');assert.equal(cross.fundEntries.find(e=>e.id==='rejected').linkedPosId,undefined,'Rejected excluded');
 const source=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
-assert(source.includes('1. Customer & Vehicle')&&source.includes('2. Services & Parts')&&!source.includes('Step 3 — COGS'),'POS must use clear two-step checkout');
+assert(source.includes('1. Customer & Vehicle')&&source.includes('Quotation · Transaction Entry')&&source.includes('COGS Review · All quotation items')&&source.includes('Payment Method · Cash / Terminal / QR'),'POS stages must include quotation, cost review and payment');
 assert(source.includes('linkPartsOnSale({...old,pos:[p,...old.pos]},p)'));
 assert(source.includes('Add Another Part')&&source.includes('setPurchaseLines')&&source.includes('Missing Receipt — Upload Later'));
 assert(!source.includes('Link Part</button>'),'PB manual link button must be gone');
 assert(source.includes('kind===\'EOD\'&&timeMinutesPH()<16*60'));
 assert(source.includes('Daily Sales Turnover')&&!source.includes('Friday Sales Turnover'));
 assert(source.includes('Missed Sales Turnover')&&source.includes('8*60+30'));
-console.log('PASS v6: 214UWI auto-fill, multiple parts/suppliers, once-only cashier POS association, COGS dedup, missing receipt, daily close and simplified 2-step POS source.');
+console.log('PASS v6: 214UWI auto-fill, multiple parts/suppliers, once-only cashier POS association, COGS dedup, missing receipt, daily close and quotation → COGS Review → Payment POS source.');
