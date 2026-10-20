@@ -6,7 +6,7 @@ const path = require('node:path');
 const code=fs.readFileSync(path.join(__dirname,'../lib/data.ts'),'utf8');
 const compiled=ts.transpileModule(code,{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
 const moduleExports={};const sandbox={exports:moduleExports,crypto:require('node:crypto').webcrypto,Intl,Date,Math,Number,String,Array,Object};vm.runInNewContext(compiled,sandbox);
-const lib=moduleExports;const db=lib.createSeed();
+const lib=moduleExports;const db=require('./legacy-fixture.cjs')(lib);
 const b='UCM';const old=lib.balance(db,b,'RF');
 assert.equal(old,48750,'seed pending RF handling');
 assert.equal(lib.nextNumber(db,b,'RF'),'UCM-Rotating Fund-00000002');

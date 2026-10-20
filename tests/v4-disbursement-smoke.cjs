@@ -4,7 +4,7 @@ let ts;try{ts=require('typescript')}catch{ts=require('/opt/nvm/versions/node/v22
 const root=path.resolve(__dirname,'..');
 const load=(f)=>{const src=fs.readFileSync(path.join(root,'lib',f+'.ts'),'utf8');const compiled=ts.transpileModule(src,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;const mod={exports:{}};new Function('module','exports','require',compiled)(mod,mod.exports,(n)=>n==='./data'?data:require(n));return mod.exports};
 const data=load('data'),printer=load('print');
-const db=data.createSeed();const seed=db.fundEntries.find(x=>x.fund==='RF'&&x.branch==='UCM');
+const db=require('./legacy-fixture.cjs')(data);const seed=db.fundEntries.find(x=>x.fund==='RF'&&x.branch==='UCM');
 assert.equal(data.replenishmentDue(db,'UCM','RF'),1250,'initial spent amount');
 db.fundEntries.push({...seed,id:'approved-replenishment',no:'UCM-RF-99',kind:'replenishment',amount:1250,status:'Pending',date:'2026-10-16'});
 assert.equal(data.replenishmentDue(db,'UCM','RF'),1250,'pending replenishment does not alter actual balance');

@@ -6,7 +6,7 @@ const source=fs.readFileSync(path.join(root,'lib/data.ts'),'utf8');
 const compiled=ts.transpileModule(source,{fileName:'lib/data.ts',reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}});
 assert.equal((compiled.diagnostics||[]).filter(d=>d.category===ts.DiagnosticCategory.Error).length,0);
 const moduleObj={exports:{}};new Function('module','exports','require',compiled.outputText)(moduleObj,moduleObj.exports,require);const d=moduleObj.exports;
-let db=d.createSeed();const proof={name:'received.jpg',data:'data:image/jpeg;base64,AAAB'};
+let db=require('./legacy-fixture.cjs')(d);const proof={name:'received.jpg',data:'data:image/jpeg;base64,AAAB'};
 db=d.registerInventoryProduct(db,{branch:'UCM',barcode:'OIL0087',name:'Test oil',category:'Automotive Parts & Products',unit:'Bottle',unitCost:200,sellPrice:500,reorderAt:1,initialQty:0,trackingMode:'quantity'},'u-admin');
 const oil=db.inventory.find(x=>x.barcode==='OIL0087');
 assert.equal(d.stockAvailable(db,oil),0);

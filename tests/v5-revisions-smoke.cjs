@@ -8,7 +8,7 @@ assert(d.CAR_CATALOG.filter(x=>x.toLowerCase().includes('vios')).includes('Toyot
 assert.equal(d.vehicleName('Toyota Vios','2020'),'Toyota Vios 2020');
 assert.deepEqual(d.monthRange('2026-02'),['2026-02-01','2026-02-28']);
 assert.deepEqual(d.monthRange('2028-02'),['2028-02-01','2028-02-29']);
-const db=d.createSeed();db.fundEntries=[];
+const db=require('./legacy-fixture.cjs')(d);db.fundEntries=[];
 function expense(id,at,date='2026-10-17'){return {id,no:`UCM-RFP-${id}`,fund:'RFP',kind:'expense',branch:'UCM',date,amount:150,category:'Automotive Parts',payee:'Supplier',vat:'Non-VAT',voucher:'',receiptNo:'',tin:'',description:'Oil Filter',notes:'',status:'Approved',createdBy:'u-pb',createdAt:at,plate:'ABC1234',quantity:1,unitCost:150}}
 const old=expense('before','2026-10-11T01:00:00Z');
 const approved={...old,id:'disbursement',no:'UCM-RFP-D001',kind:'replenishment',amount:150,createdAt:'2026-10-12T01:00:00Z',decisionAt:'2026-10-15T01:00:00Z',status:'Approved'};

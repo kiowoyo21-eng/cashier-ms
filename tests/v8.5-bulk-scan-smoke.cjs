@@ -4,7 +4,7 @@ const ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript');
 const root=path.join(__dirname,'..');const src=fs.readFileSync(path.join(root,'lib/data.ts'),'utf8');
 const built=ts.transpileModule(src,{fileName:'lib/data.ts',compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}});
 const m={exports:{}};new Function('module','exports','require',built.outputText)(m,m.exports,require);
-const d=m.exports;const seed=d.createSeed();
+const d=m.exports;const seed=require('./legacy-fixture.cjs')(d);
 assert.equal(seed.inventory.length,0,'No demo products may prepopulate inventory');
 const row=(barcode,branch='UCM')=>({branch,barcode,name:'Product '+barcode,category:'Automotive Parts & Products',unit:'Piece',unitCost:100,sellPrice:150,initialQty:0,reorderAt:2});
 let db=d.registerInventoryProductsBulk(seed,[row('A001'),row('A002')],'u-admin');

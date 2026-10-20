@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
 const ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript');const root=path.join(__dirname,'..');
 function data(){const f=fs.readFileSync(path.join(root,'lib/data.ts'),'utf8');const r=ts.transpileModule(f,{fileName:'lib/data.ts',reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}});assert.equal((r.diagnostics||[]).filter(d=>d.category===1).length,0);const m={exports:{}};new Function('module','exports','require',r.outputText)(m,m.exports,require);return m.exports;}
-const d=data();let db=d.createSeed();const proof={name:'physical-delivery.jpg',data:'data:image/jpeg;base64,AAAB'};
+const d=data();let db=require('./legacy-fixture.cjs')(d);const proof={name:'physical-delivery.jpg',data:'data:image/jpeg;base64,AAAB'};
 function add(barcode,mode='quantity',branch='UCM'){db=d.registerInventoryProduct(db,{branch,barcode,name:`Demo ${barcode}`,category:'Automotive Parts & Products',unit:'Piece',unitCost:100,sellPrice:200,reorderAt:2,initialQty:0,trackingMode:mode},'u-admin');return db.inventory.find(p=>p.barcode===barcode);}
 const oil=add('OIL001');const other=add('OIL001','quantity','UCQC');const serialized=add('BATT001','serialized');
 assert.throws(()=>d.submitStockReceipt(db,[{productId:oil.id,qty:3}],'DR-1','', 'u-cashier'),/receipt/);

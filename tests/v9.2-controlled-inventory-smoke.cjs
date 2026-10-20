@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const compiled=ts.transpileModule(fs.readFileSync(path.join(root,'lib/data.ts'),'utf8'),{fileName:'lib/data.ts',reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}});
 assert.equal(compiled.diagnostics.filter(x=>x.category===ts.DiagnosticCategory.Error).length,0);
 const x={exports:{}};new Function('module','exports','require',compiled.outputText)(x,x.exports,require);const d=x.exports;
-let db=d.createSeed(),admin=db.users.find(u=>u.role==='admin'),cashier=db.users.find(u=>u.role==='cashier');
+let db=require('./legacy-fixture.cjs')(d),admin=db.users.find(u=>u.role==='admin'),cashier=db.users.find(u=>u.role==='cashier');
 // v9.2 registers a barcode with no actual quantity. Cost configuration is never a receiving substitute.
 db=d.registerPendingInventoryProducts(db,[{branch:cashier.branch,barcode:'V92OIL',name:'Verified oil',unit:'Bottle',category:'Automotive Parts & Products',reorderAt:3,trackingMode:'quantity',initialQty:0}],admin.id,true);
 let p=db.inventory.find(p=>p.barcode==='V92OIL');assert.equal(d.stockAvailable(db,p),0);

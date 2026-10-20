@@ -40,7 +40,7 @@ assert.equal(s.parseStudioFiles(JSON.stringify([file])).length,1);assert.equal(s
 assert.equal(s.safeStudioReturnPath('/documents/report_23'),'/docs/report_23');
 assert.equal(s.safeStudioReturnPath('/spreadsheets'),'/sheets');
 for(const path of ['//example.com','https://example.com','/documents/../../admin','/not-office','/spreadsheets/%2fadmin'])assert.equal(s.safeStudioReturnPath(path),null,'Unsafe return path must be rejected');
-const db=d.createSeed();const cashierSources=s.studioSources(db,'cashier','UCM','ALL','','');
+const db=require('./legacy-fixture.cjs')(d);const cashierSources=s.studioSources(db,'cashier','UCM','ALL','','');
 assert.equal(cashierSources.some(x=>x.id==='audit'||x.id==='parts'),false,'Cashier cannot import admin audit or PB purchases');
 assert.equal(cashierSources.find(x=>x.id==='funds').rows.every(x=>x[1]==='RF'&&x[4]==='UC Mandaluyong'),true,'Only own branch RF');
 const pbSources=s.studioSources(db,'pb','UCM','ALL','','');

@@ -1,4 +1,4 @@
-# Underchargers Fund Management System — Frontend PWA v9.2
+# Underchargers Fund Management System — Frontend PWA v9.9
 
 Next.js / React / TypeScript responsive PWA for Admin, Cashier, and Parts Buyer. This is a **browser-local frontend prototype**. No Supabase connection, trusted server, multi-device synchronization, or tamper-resistant access control exists yet.
 
@@ -91,3 +91,18 @@ Deploy this Next.js project to your existing **Vercel project**. The app works a
 Previous `/documents` and `/spreadsheets` links issue temporary redirects to the new routes. Existing stored report files retain the same `uc_report_studio_v1` storage key and no data conversion is needed **if the deployment origin and browser profile remain the same**. After deployment, open `/docs` and `/sheets` on your real project hostname. The `localhost` URL above is only a local developer example.
 
 **Important:** Vercel hosts the editor pages, not the files: report content still exists only in browser localStorage, and demo login session uses sessionStorage. URL sharing to another device is not possible until shared authenticated storage/database is built. `/docs` and `/sheets` are not third-party Google editors. This release does not deploy or change DNS/Vercel project settings.
+
+## v9.9 — Simplified POS and no seeded business transactions
+
+- **POS entry uses two clear steps:** Customer & Vehicle → Add Items & Save. The saved transaction opens for actual payment recording, then closure.
+- Internal cost and Parts Buyer breakdown are available under optional details so daily cashier users can focus on items, payments and remaining balances.
+- "Pay remaining" fills the payment amount; existing card/GCash/bank terminal reference validation stays intact.
+- Manual addition of a registered inventory part during POS creation is blocked; use Admin-approved POS-linked Stock Release.
+- **New browser installations start with zero transactions, zero inventory, zero audit events and zero demo fund balances**. The three role-based frontend login accounts remain until real backend authentication is implemented. Set opening RF/RFP balances explicitly through Admin Settings before using fund workflows.
+- On existing browser installations, only *exactly identifiable unmodified legacy sample transactions* are removed on load; genuine transactions and linked/referenced sample records are preserved for traceability. Do **not** clear the entire browser storage to remove samples.
+- A former `*-demo-v1` localStorage key is retained deliberately to protect genuine saved records and not silently reset a deployed browser. This remains frontend-only: files and records are not cross-device.
+- The Vercel ZIP is **repository-root** layout, not nested under `cashier-ms-main`. The lightweight `prebuild` import validation reports missing local code files before a deployment compilation.
+
+### Deployment verification
+
+Run `npm run check:components` and `npm run test:logic` before `npm run build`. Logic and TypeScript-source parsing are verified in this bundle; a complete Next.js production build and physical browser workflow remain unverified if `npm install` cannot fetch dependencies. Verify the intended GitHub repository and Vercel project are connected before deploying.

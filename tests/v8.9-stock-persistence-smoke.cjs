@@ -7,7 +7,7 @@ const file=fs.readFileSync(path.join(root,'lib/data.ts'),'utf8');
 const js=ts.transpileModule(file,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
 const m={exports:{}};vm.runInNewContext(js,{module:m,exports:m.exports,crypto:require('node:crypto').webcrypto,Intl,Date,console,localStorage,window:{}});
 const d=m.exports;
-let db=d.createSeed();const admin=db.users.find(u=>u.role==='admin'),cashier=db.users.find(u=>u.role==='cashier');
+let db=require('./legacy-fixture.cjs')(d);const admin=db.users.find(u=>u.role==='admin'),cashier=db.users.find(u=>u.role==='cashier');
 const make=(code,qty)=>({branch:'UCM',barcode:code,name:'Test Oil '+code,category:'Automotive Parts & Products',unit:'Bottle',unitCost:100,sellPrice:200,reorderAt:2,trackingMode:'quantity',initialQty:qty});
 // New Admin product: 1 verified Stock In; survives a full save/reload.
 db=d.registerInventoryProduct(db,make('T89001',1),admin.id);

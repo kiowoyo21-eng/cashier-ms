@@ -6,7 +6,7 @@ const path=require('node:path');
 const file=fs.readFileSync(path.join(__dirname,'../lib/data.ts'),'utf8');
 const code=ts.transpileModule(file,{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
 const moduleExports={};vm.runInNewContext(code,{exports:moduleExports,crypto:require('node:crypto').webcrypto,Intl,Date,Math,Number,String,Array,Object});
-const lib=moduleExports;const db=lib.createSeed();
+const lib=moduleExports;const db=require('./legacy-fixture.cjs')(lib);
 assert.equal(db.settings.categories.length,11);
 assert.equal(new Set(db.settings.categories).size,11);
 assert(db.settings.categories.includes('Client Expense'));

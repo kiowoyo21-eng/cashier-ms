@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');const ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript');const vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
 function moduleFrom(file){const src=fs.readFileSync(path.join(root,file),'utf8');const compiled=ts.transpileModule(src,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}});const m={exports:{}};vm.runInNewContext(compiled.outputText,{module:m,exports:m.exports,require,crypto:globalThis.crypto||require('node:crypto').webcrypto,Intl,Date,console,localStorage:{getItem:()=>null,setItem:()=>{}}});return m.exports;}
-const d=moduleFrom('lib/data.ts');let db=d.createSeed();const admin=db.users.find(u=>u.role==='admin'),cashier=db.users.find(u=>u.role==='cashier');assert(admin&&cashier);
+const d=moduleFrom('lib/data.ts');let db=require('./legacy-fixture.cjs')(d);const admin=db.users.find(u=>u.role==='admin'),cashier=db.users.find(u=>u.role==='cashier');assert(admin&&cashier);
 const init={branch:cashier.branch,barcode:'V880001',name:'Actual Oil Bottle',category:'Automotive Parts & Products',unit:'Bottle',unitCost:200,sellPrice:350,reorderAt:2,trackingMode:'quantity'};
 db=d.registerInventoryProduct(db,{...init,initialQty:1},admin.id);
 const oil=db.inventory.find(p=>p.barcode==='V880001');assert.equal(d.stockAvailable(db,oil),1,'admin single add immediately available');

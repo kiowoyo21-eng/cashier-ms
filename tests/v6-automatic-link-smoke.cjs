@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
 let ts;try{ts=require('typescript')}catch{ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript')}
 const root=path.join(__dirname,'..');function getModule(name){const source=fs.readFileSync(path.join(root,name),'utf8');const result=ts.transpileModule(source,{fileName:name,reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}});assert.equal(result.diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,`Syntax issue in ${name}`);const m={exports:{}};new Function('module','exports','require',result.outputText)(m,m.exports,require);return m.exports;}
-const d=getModule('lib/data.ts');const db=d.createSeed();db.pos=[];db.fundEntries=[];
+const d=getModule('lib/data.ts');const db=require('./legacy-fixture.cjs')(d);db.pos=[];db.fundEntries=[];
 assert.equal(d.normalizePlate('214 u-wi'),'214UWI');assert.equal(d.normalizePlate(' aBc-123 '),'ABC123');
 const expense=(id,branch,plate,part,supplier,qty,cost,extras={})=>({id,purchaseId:'pay-1',no:'UCM-RFP-00000002',kind:'expense',fund:'RFP',branch,date:'2026-10-17',amount:qty*cost,category:'Automotive Parts',payee:supplier,vat:'Non-VAT',voucher:'',receiptNo:'',tin:'',description:part,notes:'',status:'Pending',createdBy:'u-pb',createdAt:'2026-10-17T08:00:00+08:00',plate,car:'Toyota Vios 2020',quantity:qty,unitCost:cost,...extras});
 const a=expense('a','UCM','214UWI','Brake Pads','Supplier A',1,1800);const b=expense('b','UCM','214UWI','Oil Filter','Supplier B',2,450);db.fundEntries.push(a,b);
@@ -19,11 +19,11 @@ const after=d.linkPartsOnSale(linked,{...sale,id:'another'});assert.deepEqual(af
 linked.fundEntries.push(expense('third','UCQC','214UWI','Tire','Other',1,700));linked.fundEntries.push(expense('rejected','UCM','214UWI','Gear','Other',1,100,{status:'Rejected'}));
 const cross=d.linkPartsOnSale(linked,{...sale,id:'visit3'});assert.equal(cross.fundEntries.find(e=>e.id==='third').linkedPosId,undefined,'Branch isolated');assert.equal(cross.fundEntries.find(e=>e.id==='rejected').linkedPosId,undefined,'Rejected excluded');
 const source=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
-assert(source.includes('Step 1 — Plate Number')&&source.includes('Step 2 — Cashier Transaction Entry')&&source.includes('Step 3 — COGS'));
+assert(source.includes('1. Customer & Vehicle')&&source.includes('2. Services & Parts')&&!source.includes('Step 3 — COGS'),'POS must use clear two-step checkout');
 assert(source.includes('linkPartsOnSale({...old,pos:[p,...old.pos]},p)'));
 assert(source.includes('Add Another Part')&&source.includes('setPurchaseLines')&&source.includes('Missing Receipt — Upload Later'));
 assert(!source.includes('Link Part</button>'),'PB manual link button must be gone');
 assert(source.includes('kind===\'EOD\'&&timeMinutesPH()<16*60'));
 assert(source.includes('Daily Sales Turnover')&&!source.includes('Friday Sales Turnover'));
 assert(source.includes('Missed Sales Turnover')&&source.includes('8*60+30'));
-console.log('PASS v6: 214UWI auto-fill, multiple parts/suppliers, once-only cashier POS association, COGS dedup, missing receipt, daily close and responsive 3-step POS source.');
+console.log('PASS v6: 214UWI auto-fill, multiple parts/suppliers, once-only cashier POS association, COGS dedup, missing receipt, daily close and simplified 2-step POS source.');

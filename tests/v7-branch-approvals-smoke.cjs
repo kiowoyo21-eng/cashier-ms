@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');const fs=require('node:fs'),path=require('node:path');
 let ts;try{ts=require('typescript')}catch{ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript')}
 function mod(file,relative){const source=fs.readFileSync(path.join(__dirname,'..',file),'utf8');const r=ts.transpileModule(source,{fileName:file,reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}});assert.equal(r.diagnostics.filter(x=>x.category===1).length,0,`${file} syntax error`);const m={exports:{}};new Function('module','exports','require',r.outputText)(m,m.exports,relative);return m.exports;}
-const d=mod('lib/data.ts',require);const printer=mod('lib/print.ts',n=>n==='./data'?d:require(n));const db=d.createSeed();
+const d=mod('lib/data.ts',require);const printer=mod('lib/print.ts',n=>n==='./data'?d:require(n));const db=require('./legacy-fixture.cjs')(d);
 let totals=d.branchFundTotals(db,'RF');assert.equal(totals.rows.length,4);assert.equal(totals.rows.find(x=>x.branch==='UCM').expenses,1250);assert.equal(totals.rows.find(x=>x.branch==='UCQC').expenses,680);assert.equal(totals.rows.find(x=>x.branch==='UCLP').expenses,0);assert.equal(totals.rows.find(x=>x.branch==='MMM').expenses,0);assert.equal(totals.grand.toReplenish,1930);
 const ref={...db.fundEntries[0],id:'request01',no:'UCM-RF-DISB-01',kind:'replenishment',amount:1250,status:'Pending',createdBy:'u-cashier',signature:'data:image/png;base64,SIGNED',accountingStatus:'Pending',presidentStatus:'Pending',checkNo:'CH-51',bank:'BDO'};
 db.fundEntries.push(ref);assert.equal(d.balance(db,'UCM','RF'),48750);assert.equal(d.balance(db,'UCQC','RF'),49320);assert.equal(d.balance(db,'UCM','RFP'),116200);

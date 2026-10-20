@@ -5,7 +5,7 @@ const ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript');
 const root=path.join(__dirname,'..');
 function sourceFile(file){return fs.readFileSync(path.join(root,file),'utf8')}
 function getData(){const file='lib/data.ts',source=sourceFile(file);const r=ts.transpileModule(source,{fileName:file,reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}});assert.equal(r.diagnostics.filter(x=>x.category===ts.DiagnosticCategory.Error).length,0);const m={exports:{}};new Function('module','exports','require',r.outputText)(m,m.exports,require);return m.exports;}
-const d=getData();let db=d.createSeed();
+const d=getData();let db=require('./legacy-fixture.cjs')(d);
 assert.deepEqual([...new Set(db.users.map(u=>u.role))].sort(),['admin','cashier','pb']);
 const details={branch:'UCQC',barcode:'TEST001',name:'Test air filter',category:'Automotive Parts & Products',unit:'Piece',unitCost:125,sellPrice:220,reorderAt:5,initialQty:3};
 assert.throws(()=>d.registerInventoryProduct(db,details,'u-cashier'),/Only Admin/);

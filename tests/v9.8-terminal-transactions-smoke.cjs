@@ -8,7 +8,7 @@ try{
  const compile=spawnSync('tsc',['--strict','--target','es2020','--module','commonjs','--lib','es2020,dom','--skipLibCheck','lib/data.ts','lib/terminal.ts','lib/report-studio.ts','--outDir',out],{cwd:path.resolve(__dirname,'..'),encoding:'utf8'});
  assert.equal(compile.status,0,compile.stdout+'\n'+compile.stderr);
  const D=require(path.join(out,'data.js')),T=require(path.join(out,'terminal.js'));
- const db=D.createSeed(),date=D.todayPH();
+ const db=require('./legacy-fixture.cjs')(D),date=D.todayPH();
  const pos={...db.pos[0],id:'tx-pos',no:'UCM-POS-10009999',items:[{id:'i1',type:'Service',name:'Labor',qty:1,price:1500,cost:100}],payments:[],status:'Pending',createdBy:'u-cashier'};
  let state={...db,pos:[pos,...db.pos]};
  const meta={provider:'Maya',terminalId:'TER-01',reference:'RRN-0000001',date};

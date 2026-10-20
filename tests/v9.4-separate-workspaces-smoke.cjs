@@ -26,7 +26,7 @@ assert.match(component,/studioFileHref\(f\)/,'File listing links to individual f
 assert.match(component,/canDeleteStudio\(f,userId\)/,'Delete available on owned drafts');
 assert.match(component,/window\.confirm\(`/,'Delete requires confirmation');
 assert.match(style,/\.office-global-head/, 'Standalone layout needs its own header');
-assert.match(pkg.version,/^9\.[5678]\./);
+assert(Number(pkg.version.split('.')[0])>=9 && Number(pkg.version.split('.')[1])>=5, 'v9.5+ office routes retained');
 const compiled = ts.transpileModule(data, {fileName:'report-studio.ts',compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
 const moduleObj = {exports:{}};
 vm.runInNewContext(`(function(require,module,exports){${compiled}\n})`, {console,Intl,Date}, {filename:'report-studio.js'})((id)=>id==='./data'?{}:require(id),moduleObj,moduleObj.exports);

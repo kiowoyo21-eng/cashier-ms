@@ -33,5 +33,5 @@ const sheets=read('components/SheetWorkbench.tsx'),docs=read('components/Documen
 for(const feature of ['importXlsx','parseCsv','getWorksheets','undoRef','redoRef','office-sheet-tabs','office-grid','cellStyleKey','replaceAll','onPaste'])assert.ok(sheets.includes(feature),`Sheets requires ${feature}`);
 for(const feature of ['importDocx','formatBlock','createLink','insertUnorderedList','addTable','findNext','office-doc-paper','contentEditable'])assert.ok(docs.includes(feature),`Docs requires ${feature}`);
 for(const feature of ['exportXlsx','exportDocx','SheetWorkbench','DocumentWorkbench','STUDIO_KEY','canDeleteStudio','canReviewStudio'])assert.ok(studioUi.includes(feature),`Report Studio integration requires ${feature}`);
-assert.match(read('public/sw.js'),/uc-fund-shell-v9-[78]/,'Refresh PWA shell on deployment');
+assert.match(read('public/sw.js'),/uc-fund-shell-v9-[789]/,'Refresh PWA shell on deployment');
 console.log('PASS v9.7: legacy files, multiple tabs, 1000-row grid, formulas, CSV parser, Office ZIP exports, editor import/toolbars, review security, and Vercel cache update.');

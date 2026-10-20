@@ -56,7 +56,7 @@
 .vehicle-autocomplete{position:relative;min-width:0}.vehicle-suggestion-list{position:absolute;z-index:10;top:calc(100% + 3px);left:0;right:0;max-height:180px;overflow:auto;background:#fff;border:1px solid #d9dce1;border-radius:8px;box-shadow:0 10px 24px #1118271d}.vehicle-suggestion-list>button{display:block;width:100%;background:#fff;border:0;border-bottom:1px solid #f1f2f5;text-align:left;padding:10px 12px;font-size:12px;cursor:pointer}.vehicle-suggestion-list>button:hover,.vehicle-suggestion-list>button:focus{background:#fff5ca}.vehicle-suggestion-list>p{padding:12px}.report-filters>.field{min-width:145px}@media(max-width:670px){.vehicle-suggestion-list{max-height:140px}.report-filters>.field{min-width:0}}
 
 /* V6 compact sales workflow, PB multi-line purchase and receipt recovery */
-.pos-stepper{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.pos-stepper{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:12px}
 .pos-stepper>div{border:1px solid #e9ebef;border-radius:8px;background:#f8f9fa;color:#7d838c;font-size:10.5px;padding:10px 8px;text-align:center;font-weight:650}
 .pos-stepper>div.active{background:#fff3b4;border-color:#e4bf30;color:#29241a}.pos-stepper>div.done{background:#f1f9f4;border-color:#c8e9d6;color:#29724d}
 .plate-search-field{position:relative;min-width:0}.plate-suggestion-list{position:absolute;z-index:15;top:calc(100% + 4px);width:100%;max-height:205px;overflow-y:auto;border:1px solid #e6d689;box-shadow:0 12px 25px #25201b20;border-radius:9px;background:white}.plate-suggestion-list button{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:10px 12px;border:0;border-bottom:1px solid #f0f0f0;background:white;gap:4px;text-align:left}.plate-suggestion-list button:hover,.plate-suggestion-list button:focus{background:#fff8d6}.plate-suggestion-list button span{font-size:11px}.plate-suggestion-list button small{font-size:10px;color:#7c838c}.plate-suggestion-list>.muted{display:block;padding:9px 12px}
@@ -461,3 +461,44 @@
 .terminal-empty{padding:24px;text-align:center;color:#8492a5;font-size:12px}
 @media(max-width:900px){.terminal-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.terminal-filter-row .search-box{flex:1}}
 @media(max-width:600px){.terminal-summary-grid{grid-template-columns:1fr 1fr;gap:8px}.terminal-summary-grid>div{padding:12px}.terminal-summary-grid strong{font-size:16px}.terminal-form{grid-template-columns:1fr;padding:13px}.terminal-form-wide{grid-column:1}.terminal-filter-row{padding:12px}.terminal-filter-row label{flex:1 1 40%}.terminal-filter-row .search-box{flex-basis:100%}}
+
+/* v9.9 — clear, two-step cashier POS */
+.pos-checkout-guide{border:1px solid #dce6d7;background:#f5faf3;border-radius:12px;padding:13px 16px;margin:14px 0;color:#244126;font-size:13px;line-height:1.55}
+.pos-checkout-guide strong{display:block;margin-bottom:4px;font-size:14px}.pos-checkout-guide p{margin:0 0 5px}.pos-checkout-guide span{color:#526452;font-size:12px}
+.pos-advanced{border:1px solid #e4e7ec;border-radius:10px;padding:10px 12px;margin:12px 0;background:#fafbfc}
+.pos-advanced summary{cursor:pointer;font-weight:650;font-size:13px;color:#4b5563}.pos-advanced[open] summary{margin-bottom:12px}
+.pos-amount-field{display:flex;flex-direction:column;gap:6px;align-items:flex-start}.pos-amount-field>.field{width:100%}
+.pos-amount-field .button{padding:5px 10px}
+
+/* v9.10 — cashier-friendly service / part entry, used in wizard and saved POS */
+.pos-line-composer{background:linear-gradient(180deg,#ffffff,#fafbfc);border:1px solid #dee3e9;border-radius:14px;padding:18px;margin:12px 0 16px;box-shadow:0 4px 16px #171a2208}
+.pos-line-composer-head{display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.pos-line-composer-head>div:first-child{display:grid;gap:4px}.pos-line-composer-head strong{font-size:15px;color:#222832}.pos-line-composer-head span{font-size:11px;color:#7b8390;line-height:1.5}
+.pos-line-type{display:flex;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:10px;padding:3px;gap:3px}
+.pos-line-type button{border:1px solid transparent;background:transparent;display:flex;align-items:center;justify-content:center;gap:6px;min-height:37px;min-width:100px;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:12px;color:#647082}
+.pos-line-type button.selected{background:#fff;border-color:#ead071;color:#292d32;box-shadow:0 1px 5px #00000010}.pos-line-type button:focus-visible,.pos-qty-stepper button:focus-visible{outline:3px solid #dfc34d;outline-offset:2px}
+.pos-line-fields{display:grid;grid-template-columns:minmax(160px,2fr) minmax(135px,.95fr) minmax(150px,1.15fr);gap:13px;align-items:end}
+.pos-line-name input{height:44px}.pos-line-fields .field>label{font-weight:750;color:#525864;font-size:10.5px;margin-bottom:7px;display:block}
+.pos-qty-stepper{display:flex;align-items:center;min-height:44px;border:1px solid #dadfe5;border-radius:9px;background:#fff;overflow:hidden}
+.pos-qty-stepper button{width:38px;min-height:44px;border:0;background:#f8f9fb;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#343c48;cursor:pointer}
+.pos-qty-stepper button:not(:disabled):hover{background:#fff0b4}.pos-qty-stepper button:disabled{color:#b8bdc5;cursor:not-allowed}
+.pos-qty-stepper input{width:100%;min-width:0;min-height:44px;text-align:center;border:0!important;padding:4px!important;box-shadow:none!important;font-size:14px!important;font-weight:700!important;border-radius:0!important;-moz-appearance:textfield;appearance:textfield}
+.pos-qty-stepper input::-webkit-inner-spin-button,.pos-qty-stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.pos-money-field{display:flex;align-items:center;border:1px solid #dadfe5;border-radius:9px;overflow:hidden;background:#fff;height:44px}
+.pos-money-field:focus-within,.pos-qty-stepper:focus-within{border-color:#d3b12e;box-shadow:0 0 0 3px #fff3c2}
+.pos-money-field>span{display:flex;align-items:center;justify-content:center;min-height:44px;min-width:37px;color:#7c8490;font-size:14px;font-weight:800;background:#f8fafc;border-right:1px solid #e5e7eb}
+.pos-money-field input{min-width:0;width:100%;height:44px;padding:9px 12px!important;border:0!important;box-shadow:none!important;font-size:14px!important;font-weight:700!important}
+.pos-line-help,.pos-line-warning{display:flex;align-items:flex-start;gap:9px;font-size:11px;line-height:1.5;margin:12px 0 0}.pos-line-help{color:#496a57}.pos-line-help svg,.pos-line-warning svg{flex-shrink:0;margin-top:1px}.pos-line-warning{padding:11px 12px;color:#84400e;background:#fff7ed;border:1px solid #fbd4a0;border-radius:9px}
+.pos-line-cost{margin:13px 0 0;background:#fff}.pos-line-cost-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pos-line-footer{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;padding-top:15px;border-top:1px solid #e9edf0}
+.pos-line-subtotal{display:flex;flex-direction:column;gap:3px}.pos-line-subtotal>span{font-size:10px;color:#69717d;font-weight:700}.pos-line-subtotal small{font-size:10px;font-weight:400;color:#9299a4;margin-left:5px}
+.pos-line-subtotal strong{font-size:23px;letter-spacing:-.045em;color:#202631}.pos-line-actions{display:flex;gap:8px;flex-wrap:wrap}.pos-line-actions .button{min-height:42px}.pos-line-validation{font-size:11px;color:#a34f1d;margin:9px 0 0}
+.pos-cart-head{display:flex;justify-content:space-between;gap:12px;margin:16px 0 10px}.pos-cart-head>div{display:grid;gap:3px}.pos-cart-head strong{font-size:14px;color:#272c35}.pos-cart-head span{font-size:11px;color:#8a9099}
+.pos-line-cart{border:1px solid #e3e6ea;border-radius:11px;background:#fff;overflow:hidden}
+.pos-line-cart-row{display:flex;align-items:center;gap:15px;padding:13px 14px;border-bottom:1px solid #eef0f3}.pos-line-cart-row:last-child{border-bottom:0}.pos-line-cart-row.editing{background:#fffae8}
+.pos-line-cart-main{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}.pos-line-cart-main strong{font-size:12.5px;color:#2a3039;overflow-wrap:anywhere}.pos-line-cart-main small{font-size:11px;color:#777f89}.pos-line-kind{font-size:9px;color:#616977;background:#eef1f5;border-radius:5px;padding:3px 6px;align-self:flex-start;font-weight:750;text-transform:uppercase;letter-spacing:.035em}
+.pos-line-cart-total{font-size:13px;white-space:nowrap;color:#2e3440}.pos-line-cart-actions{display:flex;align-items:center;gap:6px}.pos-line-cart-actions .button{padding:6px 9px;font-size:10px}
+.pos-line-cart-empty{display:flex;align-items:center;gap:10px;padding:19px;color:#868e99;font-size:11px;line-height:1.5}.pos-line-cart-empty svg{flex-shrink:0}
+.pos-draft-composer{margin:14px 0 20px}.pos-line-composer-compact{box-shadow:none;background:#fbfcff}
+@media(max-width:760px){.pos-line-composer{padding:13px}.pos-line-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.pos-line-name{grid-column:1/-1}.pos-line-type{width:100%}.pos-line-type button{flex:1}}
+@media(max-width:500px){.pos-line-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.pos-line-footer{align-items:stretch}.pos-line-actions{width:100%}.pos-line-actions .button{flex:1;justify-content:center}.pos-line-cost-grid{grid-template-columns:1fr}.pos-line-cart-row{gap:8px;flex-wrap:wrap}.pos-line-cart-main{flex-basis:62%}.pos-line-cart-total{margin-left:auto}.pos-line-cart-actions{width:100%;justify-content:flex-end}.pos-qty-stepper button{width:32px}.pos-qty-stepper input{font-size:13px!important}.pos-line-subtotal strong{font-size:20px}}
