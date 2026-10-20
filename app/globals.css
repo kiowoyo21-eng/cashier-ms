@@ -517,3 +517,21 @@
 .cogs-review-paper{display:grid;gap:11px}.cogs-review-row{padding:14px;border:1px solid #e5e9ec;border-radius:12px;display:grid;gap:10px}.cogs-review-header{display:flex;justify-content:space-between;gap:14px;align-items:center}.cogs-review-header strong{font-size:12px}.cogs-review-header small{font-size:11px;color:#89919b}.cogs-review-fields{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.7fr) minmax(0,1fr);gap:10px}.cogs-review-fields .field{min-width:0}.cogs-review-fields select,.cogs-review-fields input{width:100%}.cogs-review-note{font-size:11px;color:#757d88}.cogs-review-alert{color:#ab4e1c;background:#fff9ec;border:1px solid #f1ddbb;border-radius:8px;padding:10px;font-size:11px}
 .pos-stepper{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:560px){.receipt-entry{padding:12px}.receipt-head,.receipt-input-row,.receipt-saved-row{grid-template-columns:minmax(0,1.5fr) 46px minmax(87px,1fr);gap:5px}.receipt-head{font-size:9px;padding:9px 6px}.receipt-input{padding:0 9px!important;font-size:11px!important}.receipt-money{padding-left:7px!important}.receipt-kind button{padding:5px 7px;font-size:9px}.receipt-entry-caption span{display:block}.cogs-review-fields{grid-template-columns:1fr 1fr}.cogs-review-fields>.field:last-child{grid-column:1/-1}.receipt-entry-buttons{flex-wrap:wrap;justify-content:flex-end}}
+/* v9.12: Receipt quotation rows live in ONE grid; no separate add-item card. */
+.receipt-inline-editor{min-height:340px;padding:10px 13px}
+.receipt-inline-editor .receipt-head,.receipt-inline-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(48px,.65fr) minmax(110px,1.2fr);gap:12px;align-items:start}
+.receipt-inline-list{flex:1;min-height:100px}
+.receipt-inline-block{border-bottom:1px solid #eff0f3;padding:13px 4px 10px}
+.receipt-inline-row-meta{display:flex;justify-content:space-between;gap:10px;margin:7px 0 0;font-size:11px;color:#88919b}
+.receipt-inline-delete{border:0;background:transparent;color:#7b8792;display:flex;gap:5px;align-items:center;font-size:11px;cursor:pointer}
+.receipt-inline-delete:disabled{opacity:.3;cursor:default}
+.receipt-add-row{display:flex;gap:8px;align-items:center;margin:16px 0 25px 5px;border:0;background:transparent;font-weight:750;color:#333;cursor:pointer;padding:8px}
+.receipt-add-row:hover{color:#997700}
+.receipt-inline-editor .receipt-total{margin-top:auto}
+.unit-lock-warning{padding:13px;border:1px solid #f0cca3;border-radius:10px;background:#fff9ed;color:#81501f;font-size:12px;margin:12px 0}
+.draft-history{margin:14px 0;border:1px solid #e5e8ed;border-radius:10px;padding:12px}
+.draft-history summary{cursor:pointer;font-weight:750;color:#303741}
+.draft-history-item{padding:10px 5px;border-top:1px solid #eee;font-size:12px;display:grid;gap:4px}
+.draft-history-item:first-of-type{margin-top:9px}
+.draft-history-item small{color:#7b828c}
+@media(max-width:560px){.receipt-inline-editor .receipt-head,.receipt-inline-row{grid-template-columns:minmax(0,1.5fr) 44px minmax(83px,1fr);gap:5px}.receipt-inline-editor{padding:8px}.receipt-inline-row .receipt-input{font-size:11px!important}.receipt-inline-row-meta{font-size:9px}.receipt-add-row{margin-bottom:18px}}

@@ -53,11 +53,12 @@ export interface StockReceipt {id:string;branch:BranchId;reference:string;lines:
  * authorizes a documented issue against an existing open POS/vehicle. */
 export interface StockIssueRequest {id:string;branch:BranchId;posId:string;lines:StockReceiptLine[];reason:string;status:'Pending'|'Approved'|'Rejected';createdBy:string;createdAt:string;decidedBy?:string;decidedAt?:string;decisionNotes?:string;}
 export interface StockCorrection {id:string;stockOutId:string;branch:BranchId;posId:string;qty:number;reason:string;requestedBy:string;requestedAt:string;status:'Pending'|'Approved'|'Rejected';decidedBy?:string;decidedAt?:string;decisionNotes?:string;}
-export interface POSLine {id:string;type:'Service'|'Part';name:string;qty:number;price:number;cost:number;supplier?:string;receiptNo?:string;proof?:Receipt;costSource?:'Direct'|'PB / Inventory'|'No direct cost';}
+export interface POSLine {id:string;type:'Service'|'Part';name:string;qty:number;price:number;lineTotal?:number;cost:number;supplier?:string;receiptNo?:string;proof?:Receipt;costSource?:'Direct'|'PB / Inventory'|'No direct cost';}
 export interface POSPayment {id:string;mode:'Cash'|'GCash'|'Bank Transfer'|'Card';amount:number;date:string;terminalId?:string;provider?:string;reference?:string;}
 export interface TerminalEvent {id:string;branch:BranchId;mode:'GCash'|'Bank Transfer'|'Card';kind:'Payment'|'Declined'|'Void'|'Refund';provider:string;terminalId:string;reference:string;amount:number;date:string;notes:string;posId?:string;paymentId?:string;originalEventId?:string;createdBy:string;createdAt:string;}
 export interface TerminalSettlement {id:string;branch:BranchId;date:string;provider:string;terminalId:string;batchRef:string;expected:number;reportedTotal:number;variance:number;unmatchedAtSubmission:number;exceptionCountAtSubmission:number;notes:string;recordedBy:string;recordedAt:string;status:'Pending'|'Verified'|'Flagged';supersedesId?:string;reviewedBy?:string;reviewedAt?:string;reviewNotes?:string;}
-export interface POS {id:string;no:string;branch:BranchId;date:string;client:string;phone:string;vehicle:string;plate:string;concern:string;items:POSLine[];payments:POSPayment[];status:'Pending'|'Closed';parentId?:string;createdBy:string;createdAt:string;closedAt?:string;cogsReviewedAt?:string;cogsReviewedBy?:string;}
+export interface POSDraftHistory {revision:number;at:string;by:string;action:string;before?:{client:string;phone:string;vehicle:string;plate:string;concern:string;date:string;items:Partial<POSLine>[];cogsReviewedAt?:string};after:{client:string;phone:string;vehicle:string;plate:string;concern:string;date:string;items:Partial<POSLine>[];cogsReviewedAt?:string};}
+export interface POS {id:string;no:string;branch:BranchId;date:string;client:string;phone:string;vehicle:string;plate:string;concern:string;items:POSLine[];payments:POSPayment[];draftHistory?:POSDraftHistory[];status:'Pending'|'Closed';parentId?:string;createdBy:string;createdAt:string;closedAt?:string;cogsReviewedAt?:string;cogsReviewedBy?:string;}
 export interface Count {id:string;branch:BranchId;userId:string;date:string;kind:'BOD'|'EOD';actual:number;expected:number;difference:number;notes:string;createdAt:string;denominations?:Record<string,number>;signature?:string;scope?:'Sales Cash'|'RF'|'RFP';}
 export interface Incident {id:string;branch:BranchId;userId:string;date:string;type:'Missed Opening'|'Missed Closing'|'Missed Sales Turnover'|'Cash Discrepancy'|'Expense Explanation';detail:string;status:'Required'|'Submitted'|'Reviewed';explanation:string;createdAt:string;submittedAt?:string;entryId?:string;reviewedAt?:string;}
 export interface Turnover {id:string;branch:BranchId;date:string;amount:number;notes:string;signature?:string;createdBy:string;createdAt:string;kind?:'Sales'|'Funds';expected?:number;actual?:number;variance?:number;}
@@ -181,7 +182,8 @@ export function nextNumber(db:Database,branch:BranchId,type:'RF'|'RFP'|'POS'):st
   return `${prefix}${String(max+1).padStart(8,'0')}`;
 }
 export function log(db:Database,by:string,action:string,detail:string):Database {return {...db,audit:[{id:uid(),at:new Date().toISOString(),by,action,detail},...db.audit].slice(0,1000)};}
-export const posTotal=(p:POS)=>p.items.reduce((v,i)=>v+i.qty*i.price,0);
+export const posLineTotal=(i:POSLine)=>i.lineTotal??Math.round(i.qty*i.price*100)/100;
+export const posTotal=(p:POS)=>Math.round(p.items.reduce((v,i)=>v+posLineTotal(i),0)*100)/100;
 export const paidTotal=(p:POS)=>p.payments.reduce((v,i)=>v+i.amount,0);
 /** Branch-aware stock quantity from initial count and immutable ledger. */
 export function stockAvailable(db:Database,p:InventoryProduct):number {
@@ -565,7 +567,7 @@ export function plateSuggestions(db:Database,branch:BranchId,term:string){
 /** Links only unassigned PB part-lines to a new Cashier POS (not to unrelated previous visits). */
 export function linkPartsOnSale(db:Database,pos:POS):Database{
  // Do not silently assign parts to a new visit if another open POS exists for the same plate.
- if(db.pos.some(p=>p.id!==pos.id&&p.branch===pos.branch&&p.status==='Pending'&&normalizePlate(p.plate)===normalizePlate(pos.plate)))return db;
+ if(db.pos.some(p=>p.id!==pos.id&&p.status==='Pending'&&normalizePlate(p.plate)===normalizePlate(pos.plate)))return db;
  const items=db.fundEntries.filter(e=>e.fund==='RFP'&&e.kind==='expense'&&e.status!=='Rejected'&&!e.linkedPosId&&e.branch===pos.branch&&normalizePlate(e.plate||'')===normalizePlate(pos.plate));
  if(!items.length)return db;
  return {...db,fundEntries:db.fundEntries.map(e=>items.some(i=>i.id===e.id)?{...e,linkedPosId:pos.id}:e)};
@@ -579,9 +581,11 @@ export function assignConsumedStockToPOS(db:Database,branch:BranchId,rawPlate:st
  if(!plate)throw new Error('Enter a valid plate number before confirming consumed inventory.');
  let target=posId?db.pos.find(p=>p.id===posId):undefined;
  if(posId&&(!target||target.branch!==branch||target.status!=='Pending'||normalizePlate(target.plate)!==plate))throw new Error('Selected POS is not a valid open visit for this plate and branch.');
+ if(db.pos.some(p=>p.status==='Pending'&&p.branch!==branch&&normalizePlate(p.plate)===plate))throw new Error(`Unit ${plate} is still open in another branch. Close that transaction first.`);
  let next=db,created=false;
  if(!target){
-  const open=db.pos.filter(p=>p.branch===branch&&p.status==='Pending'&&normalizePlate(p.plate)===plate);
+  const open=db.pos.filter(p=>p.status==='Pending'&&normalizePlate(p.plate)===plate);
+  if(open.some(p=>p.branch!==branch))throw new Error(`Unit ${plate} already has an open POS at another branch. Close it before transferring the vehicle.`);
   if(open.length>1)throw new Error('Multiple POS Drafts found. Choose the correct visit.');
   target=open[0];
   if(!target){

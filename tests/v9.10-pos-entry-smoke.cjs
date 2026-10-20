@@ -27,10 +27,11 @@ try{
  }
  const composer=fs.readFileSync(path.join(root,'components/POSLineComposer.tsx'),'utf8');
  const app=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
- assert.equal((app.match(/<POSLineComposer /g)||[]).length,2,'Same editor used in both POS screens');
+ assert.equal((app.match(/<POSLineComposer /g)||[]).length,1,'Saved draft still uses protected composer');
+ assert(app.includes('<POSQuotationGrid rows={quotationRows}'),'Wizard now uses one receipt-grid with inline rows');
  assert(composer.includes('Request Stock Release'),'Cannot quietly bypass registered inventory');
  assert(app.includes('editWizardLine')&&app.includes('wizardEditingId'),'Queued draft items can be edited without reposting');
- assert(app.includes('posLineNumbers(wizardLine)')&&app.includes('posLineNumbers(newLine)'),'Validation enforced in both submit handlers');
+ assert(app.includes('quotationIssue(quotationRows')&&app.includes('posLineNumbers(newLine)'),'Validation enforced in new wizard and existing POS');
  assert(app.includes('recordPOSPayment')&&app.includes('requestStockIssue'),'Existing payment and inventory flows retained');
  console.log('PASS v9.10: editor validation, centavo totals, quantity limits, shared wizard/draft UI, stock guardrails and TSX syntax');
 }finally{fs.rmSync(out,{recursive:true,force:true})}

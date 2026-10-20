@@ -20,7 +20,7 @@ linked.fundEntries.push(expense('third','UCQC','214UWI','Tire','Other',1,700));l
 const cross=d.linkPartsOnSale(linked,{...sale,id:'visit3'});assert.equal(cross.fundEntries.find(e=>e.id==='third').linkedPosId,undefined,'Branch isolated');assert.equal(cross.fundEntries.find(e=>e.id==='rejected').linkedPosId,undefined,'Rejected excluded');
 const source=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
 assert(source.includes('1. Customer & Vehicle')&&source.includes('Quotation · Transaction Entry')&&source.includes('COGS Review · All quotation items')&&source.includes('Payment Method · Cash / Terminal / QR'),'POS stages must include quotation, cost review and payment');
-assert(source.includes('linkPartsOnSale({...old,pos:[p,...old.pos]},p)'));
+assert(source.includes('linkPartsOnSale(result.db,result.pos)')&&source.includes('saveUnitPOSDraft(db,p,user.id)'),'PB parts link once on initial POS creation; same-plate drafts are revised');
 assert(source.includes('Add Another Part')&&source.includes('setPurchaseLines')&&source.includes('Missing Receipt — Upload Later'));
 assert(!source.includes('Link Part</button>'),'PB manual link button must be gone');
 assert(source.includes('kind===\'EOD\'&&timeMinutesPH()<16*60'));

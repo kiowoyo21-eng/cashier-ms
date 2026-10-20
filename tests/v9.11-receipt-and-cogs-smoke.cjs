@@ -25,7 +25,7 @@ try{
  const app=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
  const composer=fs.readFileSync(path.join(root,'components/POSLineComposer.tsx'),'utf8');
  assert(app.includes('useState<POSLineDraft>(initialLine())'),'React state type must agree with optional proof');
- assert(app.includes('costReviewIssues(wizardLines)')&&app.includes('costReviewIssues(pos.items)'),'COGS review validated in both wizard and saved draft');
+ assert(app.includes('costReviewIssues(lines)')&&app.includes('costReviewIssues(pos.items)'),'COGS review validated in both wizard and saved draft');
  assert(app.includes('if(!pos.cogsReviewedAt||costReviewIssues(pos.items).length)'),'Payments blocked until COGS review completed');
  assert(app.includes('cogsReviewedAt:undefined'),'Added draft line invalidates COGS review');
  assert(app.includes('plateConfirmed')&&app.includes('setPlateConfirmed(normalizePlate(item.plate))'),'Selected plate suggestions dismissed');
@@ -35,7 +35,7 @@ try{
  assert(composer.includes('Request Stock Release'),'Registered inventory cannot bypass Stock Release');
  assert(app.includes('recordPOSPayment')&&app.includes('Request Stock Release'),'Payment and stock gate preserved');
  assert(app.includes('externalCostCoverageIssues(p,db)'),'Final sale requires proof of external part cost');
- assert(app.includes('if(pos.payments.length)'),'No silent quotation edits once payments start');
+ assert(app.includes('cannotReviseDraft(db,pos)'),'No silent quotation edits once payments or stock movement start');
  let ts;try{ts=require('typescript')}catch{ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript')}
  for(const name of ['components/POSLineComposer.tsx','components/POSCostReview.tsx','app/page.tsx']){
   const source=fs.readFileSync(path.join(root,name),'utf8');const parsed=ts.createSourceFile(name,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);

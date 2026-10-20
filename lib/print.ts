@@ -1,6 +1,6 @@
 import {
   BRANCHES,BRANCH_NAME,branchFundTotals,balance,replenishmentDue,categoryTotals,datePH,disbursementSummary,pesos,posCOGS,posCostBreakdown,
-  posTotal,paidTotal,posClosedDate,reportDateMatch,normalizePlate,pendingRFPDisbursementRows,
+  posTotal,paidTotal,posClosedDate,posLineTotal,reportDateMatch,normalizePlate,pendingRFPDisbursementRows,
   type Audit,type BranchId,type Count,type Database,type Fund,type FundEntry,type POS,type Turnover
 } from './data';
 
@@ -230,7 +230,7 @@ export function printSales(db:Database,branch:BranchId,from='',to=''){
 
 export function printPOS(db:Database,p:POS){
  const title='POS QUOTATION / TRANSACTION',branch=BRANCH_NAME(p.branch);
- const lines=p.items.map((e,i)=>`<tr>${cell(i+1)}${cell(e.type)}${cell(e.name)}${cell(e.qty)}${cell(fmt(e.price),true)}${cell(fmt(e.qty*e.price),true)}${cell(e.supplier||'—')}${cell(e.receiptNo||'—')}</tr>`).join('');
+ const lines=p.items.map((e,i)=>`<tr>${cell(i+1)}${cell(e.type)}${cell(e.name)}${cell(e.qty)}${cell(fmt(e.price),true)}${cell(fmt(posLineTotal(e)),true)}${cell(e.supplier||'—')}${cell(e.receiptNo||'—')}</tr>`).join('');
  const payments=p.payments.map(x=>`<tr>${cell(x.date)}${cell(x.mode)}${cell(fmt(x.amount),true)}</tr>`).join('');
  const costRows=posCostBreakdown(p,db);
  const categories=[['From Inventory',costRows.filter(x=>x.source.startsWith('From Inventory'))],['PB / RFP Purchases',costRows.filter(x=>x.source.startsWith('PB / RFP'))],['Other / Manual POS Costs',costRows.filter(x=>x.source==='POS / Manual COGS')]] as const;

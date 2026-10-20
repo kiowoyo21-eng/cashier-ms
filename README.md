@@ -110,3 +110,6 @@ Previous `/documents` and `/spreadsheets` links issue temporary redirects to the
 ### Deployment verification
 
 Run `npm run check:components` and `npm run test:logic` before `npm run build`. Logic and TypeScript-source parsing are verified in this bundle; a complete Next.js production build and physical browser workflow remain unverified if `npm install` cannot fetch dependencies. Verify the intended GitHub repository and Vercel project are connected before deploying.
+
+## v9.12 — Receipt Quotation + Global Unit Lock (frontend/local data)
+See `REVISION_STATUS_V9_12.md`. POS drafts are identified by normalized plate and branch. Open transactions on the same unit block other branches within the browser datastore. Same-branch open and unpaid drafts are revised with Draft History instead of duplicated. Quotation rows are entered inline. This is NOT cross-device protection until a backend database is connected.

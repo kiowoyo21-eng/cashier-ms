@@ -41,7 +41,7 @@ try{
  const parsed=ts.createSourceFile('app/page.tsx',app,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(parsed.parseDiagnostics.length,0,'POS JSX must remain valid');
  assert(app.includes('1 · Vehicle')&&app.includes('2 · Quotation')&&app.includes('3 · COGS Review')&&app.includes('4 · Payment'));
- assert(app.includes('costReviewIssues(wizardLines)')); 
+ assert(app.includes('costReviewIssues(lines)')&&app.includes('quotationIssue(quotationRows'),'COGS verification and quotation grid validation'); 
  assert(app.includes('Confirm COGS & Continue to Payment')&&app.includes('Pay remaining'));
  assert(app.includes("wizardLine.type==='Part'&&db.inventory.some"),'Registered parts cannot bypass controlled stock release');
  assert(app.includes('Internal costing and Parts Buyer breakdown (optional)'));

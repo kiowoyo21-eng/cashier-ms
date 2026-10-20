@@ -17,7 +17,7 @@ export default function POSCostReview({items,onChange,readOnly=false}:Props){
    const src=item.costSource;
    const showCost=src==='Direct';
    return <div key={item.id} className="cogs-review-row">
-    <div className="cogs-review-header"><strong>{item.type==='Service'?<Wrench size={14} style={{display:'inline',verticalAlign:'middle'}}/>:<Package size={14} style={{display:'inline',verticalAlign:'middle'}}/>} {item.name}</strong><small>{item.qty} × {php(item.price)} · Sale {php(item.qty*item.price)}</small></div>
+    <div className="cogs-review-header"><strong>{item.type==='Service'?<Wrench size={14} style={{display:'inline',verticalAlign:'middle'}}/>:<Package size={14} style={{display:'inline',verticalAlign:'middle'}}/>} {item.name}</strong><small>{item.qty} × {php(item.price)} · Sale {php(item.lineTotal??item.qty*item.price)}</small></div>
     <div className="cogs-review-fields">
      <label className="field"><span>Cost source *</span><select aria-label={`${item.name} cost source`} disabled={locked} value={src||''} onChange={e=>{
       const costSource=e.target.value as POSCostSource;onChange?.(item.id,{costSource,cost:0,supplier:'',receiptNo:'',proof:undefined});
