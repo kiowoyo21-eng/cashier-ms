@@ -1,3 +1,5 @@
+> **Latest frontend revision: v9.17** — Parts Purchase now shows assigned Branch, Brand/Model and Year are optional, and Admin Settings includes confirmed Clear App Local Storage with complete backup/restore. See `REVISION_STATUS_V9_17.md`.
+
 # v9.16 — Clean Install (No Seed Data)
 
 See `REVISION_STATUS_V9_16.md`. New browsers start with an empty business database **and no demo login accounts**. On first visit, create the Administrator in the setup screen, then add staff accounts under User Management. Existing real browser data and Docs/Sheets files are preserved; legacy sample cleanup is conservative. Frontend-only authentication is not secure for production.
