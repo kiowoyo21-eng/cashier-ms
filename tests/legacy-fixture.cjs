@@ -1,6 +1,6 @@
 // Legacy regression fixture ONLY: never used by the application.
 module.exports=function legacyFixture(d){
- const db=d.createSeed(),date=d.todayPH(),uid=d.uid;
+ const db=require('./user-fixtures.cjs')(d.createSeed()),date=d.todayPH(),uid=d.uid;
  db.settings.rfBase={UCQC:50000,UCM:50000,UCLP:50000,MMM:50000};
  db.settings.rfpBase={UCQC:120000,UCM:120000,UCLP:120000,MMM:120000};
  const entry=(no,branch,amount,payee,category,by,fund)=>({id:uid(),no,branch,date,amount,payee,category,createdBy:by,fund,kind:'expense',vat:'Non-VAT',voucher:'',receiptNo:'',tin:'',description:`Demo ${category.toLowerCase()} expense`,notes:'Sample transaction for frontend testing',status:'Pending',createdAt:new Date().toISOString()});

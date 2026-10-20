@@ -79,16 +79,48 @@ export function datePH(date:string){return new Date(`${date}T12:00:00+08:00`).to
 export const pesos = (n:number) => new Intl.NumberFormat('en-PH',{style:'currency',currency:'PHP',minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
 export const money = (n:number) => new Intl.NumberFormat('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
 export const number = (v:unknown) => Math.max(0,Number(v)||0);
-/** Empty business database for fresh installations. Demo login identities are retained
- * only to allow frontend-only role previews; real authentication needs a backend. */
+/** A clean browser starts without demo transactions, inventory, balances or accounts.
+ * The first administrator creates an account through the one-time setup screen. */
 export function createSeed():Database {
- const users:User[]=[
-  {id:'u-admin',username:'admin',password:'admin12345',name:'System Administrator',role:'admin',branch:'UCM',active:true},
-  {id:'u-cashier',username:'cashier',password:'cashier12345',name:'Cashier — Mandaluyong',role:'cashier',branch:'UCM',active:true},
-  {id:'u-pb',username:'pbacc',password:'pb12345',name:'Parts Buyer — Mandaluyong',role:'pb',branch:'UCM',active:true}
- ];
  const empty=():Record<BranchId,number>=>({UCQC:0,UCM:0,UCLP:0,MMM:0});
- return {users,fundEntries:[],pos:[],deletedPOSDrafts:[],inventory:[],stockMovements:[],stockRequests:[],stockReceipts:[],stockIssues:[],terminalEvents:[],terminalSettlements:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[],settings:{rfBase:empty(),rfpBase:empty(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
+ return {users:[],fundEntries:[],pos:[],deletedPOSDrafts:[],inventory:[],stockMovements:[],stockRequests:[],stockReceipts:[],stockIssues:[],terminalEvents:[],terminalSettlements:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[],settings:{rfBase:empty(),rfpBase:empty(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
+}
+
+/** Frontend-only first-run bootstrap. No preconfigured passwords or seed accounts. */
+export function setupFirstAdmin(db:Database,details:{name:string;username:string;password:string;branch:BranchId}):Database {
+ if(db.users.length)throw new Error('Initial admin setup is only available when no user accounts exist.');
+ const name=details.name.trim(),username=details.username.trim().toLowerCase();
+ if(name.length<2)throw new Error('Enter the administrator full name.');
+ if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username))throw new Error('Username must contain 3–32 letters, numbers, dots, underscores or hyphens.');
+ if(details.password.length<10)throw new Error('Use a password with at least 10 characters.');
+ if(!BRANCHES.some(b=>b.id===details.branch))throw new Error('Select a valid administrator branch.');
+ const account:User={id:uid(),name,username,password:details.password,role:'admin',branch:details.branch,active:true};
+ return log({...db,users:[account]},account.id,'Initial administrator created',`Admin setup for ${username} · ${BRANCH_NAME(details.branch)}`);
+}
+
+/** Remove legacy *untouched* default login accounts only when there are no
+ * business records or user-created accounts. Never strand a business with no
+ * administrator: populated browsers must migrate accounts deliberately. */
+export function removeEmptyDemoAccounts(db:Database,hasSavedOfficeFiles=false):Database {
+ const known:[string,string,string,string,Role,BranchId][]=[
+  ['u-admin','admin','admin12345','System Administrator','admin','UCM'],
+  ['u-cashier','cashier','cashier12345','Cashier — Mandaluyong','cashier','UCM'],
+  ['u-pb','pbacc','pb12345','Parts Buyer — Mandaluyong','pb','UCM']
+ ];
+ const isOriginal=(u:User)=>known.some(([id,username,password,name,role,branch])=>u.id===id&&u.username===username&&u.password===password&&u.name===name&&u.role===role&&u.branch===branch&&u.active);
+ // Retain even original-looking credentials where transactions, audit, documents
+ // or other work may belong to the account (the user can deactivate it later).
+ const housekeepingActions=new Set(['Demo inventory cleanup','Legacy demo fixture cleanup']);
+ const genuineAudit=db.audit.filter(a=>!(a.by==='system'&&housekeepingActions.has(a.action))&&!(a.action==='Login'&&known.some(([id])=>id===a.by)));
+ const hasBusinessData=[db.pos,db.fundEntries,db.inventory,db.stockMovements,db.stockRequests,db.stockReceipts,db.stockIssues||[],db.terminalEvents||[],db.terminalSettlements||[],db.counts,db.incidents,db.turnovers,db.requests,genuineAudit,db.deletedPOSDrafts||[]].some(arr=>arr.length>0);
+ const amountsAllZero=BRANCHES.every(b=>!db.settings.rfBase[b.id]&&!db.settings.rfpBase[b.id]);
+ const amountsMatchLegacy=BRANCHES.every(b=>db.settings.rfBase[b.id]===50000&&db.settings.rfpBase[b.id]===120000);
+ const customSettings=!!db.settings.reportLogo||!!db.settings.signatories?.checked||!!db.settings.signatories?.approved||db.settings.categories.some(c=>!RF_CATEGORIES.some(standard=>standard===c));
+ if(hasBusinessData||hasSavedOfficeFiles||customSettings||(!amountsAllZero&&!amountsMatchLegacy)||db.users.some(u=>!isOriginal(u)))return db;
+ const zero=():Record<BranchId,number>=>({UCQC:0,UCM:0,UCLP:0,MMM:0});
+ // An untouched seed-only browser goes through first-time admin setup instead of
+ // being left with public default passwords or fictional cash balances.
+ return {...db,users:[],audit:genuineAudit,settings:amountsMatchLegacy?{...db.settings,rfBase:zero(),rfpBase:zero()}:db.settings};
 }
 
 /** Remove ONLY the recognizable untouched v9.0-v9.8 sample records when loading
@@ -155,7 +187,7 @@ export function removeUntouchedDemoProducts(db:Database):Database {
 }
 
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
-export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];d.stockIssues=d.stockIssues||[];d.deletedPOSDrafts=d.deletedPOSDrafts||[];d.terminalEvents=d.terminalEvents||[];d.terminalSettlements=d.terminalSettlements||[];return removeLegacySeedFixtures(removeUntouchedDemoProducts(d));}}}catch{}return createSeed();}
+export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];d.stockIssues=d.stockIssues||[];d.deletedPOSDrafts=d.deletedPOSDrafts||[];d.terminalEvents=d.terminalEvents||[];d.terminalSettlements=d.terminalSettlements||[];const cleaned=removeLegacySeedFixtures(removeUntouchedDemoProducts(d));const officeRaw=localStorage.getItem('uc_report_studio_v1');let hasFiles=false;try{hasFiles=Array.isArray(JSON.parse(officeRaw||'[]'))&&JSON.parse(officeRaw||'[]').length>0;}catch{hasFiles=!!officeRaw;}return removeEmptyDemoAccounts(cleaned,hasFiles);}}}catch{}return createSeed();}
 export function storeDB(db:Database):boolean {try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));return true;}catch{return false;}}
 export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;

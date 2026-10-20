@@ -1,3 +1,7 @@
+# v9.16 — Clean Install (No Seed Data)
+
+See `REVISION_STATUS_V9_16.md`. New browsers start with an empty business database **and no demo login accounts**. On first visit, create the Administrator in the setup screen, then add staff accounts under User Management. Existing real browser data and Docs/Sheets files are preserved; legacy sample cleanup is conservative. Frontend-only authentication is not secure for production.
+
 # v9.15 — Downpayment-first POS Wizard
 
 See `REVISION_STATUS_V9_15.md`. This is still a frontend-only prototype.
@@ -55,7 +59,7 @@ npm run test:logic
 npm run build
 ```
 
-Open http://localhost:3000. Default demo users: `admin/admin12345`, `cashier/cashier12345`, `pbacc/pb12345`. These credentials are for **demo only**.
+Open the deployed Vercel domain (or http://localhost:3000 in development). The first visit opens **Create the Administrator**; there are no seeded default credentials. Add Cashier and Parts Buyer accounts from User Management afterward.
 
 ### Validation for this bundle
 

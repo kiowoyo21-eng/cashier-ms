@@ -4,7 +4,7 @@ try{
  const built=spawnSync('tsc',['--strict','--target','es2020','--module','commonjs','--skipLibCheck','--lib','es2020,dom','lib/pos-downpayment.ts','lib/terminal.ts','lib/pos-draft-control.ts','--outDir',out],{cwd:root,encoding:'utf8'});
  assert.equal(built.status,0,built.stdout+'\n'+built.stderr);
  const D=require(path.join(out,'data.js')),P=require(path.join(out,'pos-downpayment.js')),C=require(path.join(out,'pos-draft-control.js')),T=require(path.join(out,'terminal.js'));
- const db=D.createSeed(),cashier=db.users.find(u=>u.role==='cashier');assert(cashier);
+ const db=require('./user-fixtures.cjs')(D.createSeed()),cashier=db.users.find(u=>u.role==='cashier');assert(cashier);
  const original={id:'dp-test-1',no:'DP-00001',branch:cashier.branch,date:D.todayPH(),client:'Car Owner',phone:'',vehicle:'Toyota Vios 2024',plate:'DP 1234',concern:'Service',items:[{id:'oil',type:'Service',name:'Labor',qty:1,price:2500,lineTotal:2500,cost:0}],payments:[],status:'Pending',createdBy:cashier.id,createdAt:new Date().toISOString()};
  let state={...db,pos:[]};
  assert.throws(()=>P.recordInitialDownpayment(state,original,cashier.id,'Cash',2500),/LESS/);

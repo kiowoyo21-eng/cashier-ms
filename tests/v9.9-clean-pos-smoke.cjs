@@ -10,7 +10,7 @@ try{
  for(const name of ['pos','fundEntries','inventory','stockMovements','terminalEvents','terminalSettlements','counts','incidents','turnovers','audit','stockReceipts'])assert.equal(blank[name].length,0,name+' should have zero seeded records');
  assert.equal(blank.settings.rfBase.UCM,0,'No invented revolving fund balance');
  assert.equal(blank.settings.rfpBase.UCM,0,'No invented parts fund balance');
- assert.equal(blank.users.length,3,'Frontend login roles must remain usable until backend auth');
+ assert.equal(blank.users.length,0,'Fresh installations must not contain default login accounts');
  const old=require('./legacy-fixture.cjs')(d);
  const migrated=d.removeLegacySeedFixtures(old);
  assert.equal(migrated.pos.length,0,'Exact sample sale removed');
@@ -35,7 +35,7 @@ try{
  assert.equal(linked.fundEntries.length,1,'Linked fund expense must not be deleted');
  // loadDB reads and migrates old localStorage without changing its underlying storage key
  const source=fs.readFileSync(path.join(root,'lib/data.ts'),'utf8');
- assert(source.includes('return removeLegacySeedFixtures(removeUntouchedDemoProducts(d))'));
+ assert(source.includes('const cleaned=removeLegacySeedFixtures(removeUntouchedDemoProducts(d))')&&source.includes('return removeEmptyDemoAccounts(cleaned,hasFiles)'));
  const app=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
  const ts=require('typescript');
  const parsed=ts.createSourceFile('app/page.tsx',app,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);

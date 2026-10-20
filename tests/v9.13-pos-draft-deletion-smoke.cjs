@@ -4,7 +4,7 @@ try{
  const built=spawnSync('tsc',['--strict','--target','es2020','--module','commonjs','--skipLibCheck','--lib','es2020,dom','lib/pos-draft-control.ts','--outDir',out],{cwd:root,encoding:'utf8'});
  assert.equal(built.status,0,built.stdout+'\n'+built.stderr);
  const controls=require(path.join(out,'pos-draft-control.js')),data=require(path.join(out,'data.js'));
- const db=data.createSeed(),cashier=db.users.find(u=>u.role==='cashier'),admin=db.users.find(u=>u.role==='admin');
+ const db=require('./user-fixtures.cjs')(data.createSeed()),cashier=db.users.find(u=>u.role==='cashier'),admin=db.users.find(u=>u.role==='admin');
  const draft={id:'pos-delete-1',no:'UCM-POS-00000007',branch:cashier.branch,date:'2026-10-20',client:'Test Client',phone:'',vehicle:'Honda Civic 2020',plate:'ABC1234',concern:'Quote',items:[{id:'line-1',name:'Labor',qty:1,type:'Service',price:250,lineTotal:250,cost:0,costSource:'No direct cost'}],payments:[],status:'Pending',createdBy:cashier.id,createdAt:'2026-10-20T01:00:00.000Z',draftHistory:[{revision:1,at:'2026-10-20T01:00:00.000Z',by:cashier.id,action:'Initial draft',after:{client:'Test Client',phone:'',vehicle:'Honda Civic 2020',plate:'ABC1234',concern:'Quote',date:'2026-10-20',items:[]}}]};
  let original={...db,pos:[draft]};
  assert.equal(controls.draftDeletionIssue(original,draft),null);

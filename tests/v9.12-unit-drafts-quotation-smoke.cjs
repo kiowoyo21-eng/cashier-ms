@@ -4,7 +4,7 @@ try{
  const build=spawnSync('tsc',['--strict','--target','es2020','--module','commonjs','--skipLibCheck','--lib','es2020,dom','lib/pos-draft-control.ts','lib/pos-quotation-grid.ts','--outDir',out],{cwd:root,encoding:'utf8'});
  assert.equal(build.status,0,build.stdout+'\n'+build.stderr);
  const control=require(path.join(out,'pos-draft-control.js')),grid=require(path.join(out,'pos-quotation-grid.js')),data=require(path.join(out,'data.js'));
- const db=data.createSeed(),cashier=db.users.find(u=>u.role==='cashier')||{id:'cashier1',branch:'UCM',role:'cashier',active:true};
+ const db=require('./user-fixtures.cjs')(data.createSeed()),cashier=db.users.find(u=>u.role==='cashier')||{id:'cashier1',branch:'UCM',role:'cashier',active:true};
  const branch=cashier.branch,other=branch==='UCM'?'UCO':'UCM';
  const line={id:'line1',name:'Labor',type:'Service',qty:2,price:250,lineTotal:500,cost:0,costSource:'No direct cost'};
  const make=(id,no,b=branch,items=[line])=>({id,no,branch:b,date:'2026-10-20',client:'Alex',phone:'',vehicle:'Toyota',plate:'AbC-123',concern:'Oil service',items,payments:[],status:'Pending',createdBy:cashier.id,createdAt:'2026-10-20T04:00:00Z',cogsReviewedAt:'2026-10-20T04:00:00Z'});
