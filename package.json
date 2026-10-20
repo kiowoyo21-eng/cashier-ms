@@ -1,6 +1,6 @@
 {
   "name": "underchargers-fund-management-pwa",
-  "version": "9.10.0",
+  "version": "9.10.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,7 +17,8 @@
     "test:studio": "node tests/v9.3-report-studio-smoke.cjs && node tests/v9.4-separate-workspaces-smoke.cjs && node tests/v9.5-standalone-office-smoke.cjs && node tests/v9.6-vercel-office-routes-smoke.cjs",
     "test:terminal": "node tests/v9.8-terminal-transactions-smoke.cjs",
     "check:components": "node scripts/check-components.cjs",
-    "prebuild": "npm run check:components"
+    "prebuild": "npm run check:components && npm run check:view-maps",
+    "check:view-maps": "node scripts/check-view-maps.cjs"
   },
   "dependencies": {
     "next": "^15.5.0",
