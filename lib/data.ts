@@ -59,13 +59,14 @@ export interface TerminalEvent {id:string;branch:BranchId;mode:'GCash'|'Bank Tra
 export interface TerminalSettlement {id:string;branch:BranchId;date:string;provider:string;terminalId:string;batchRef:string;expected:number;reportedTotal:number;variance:number;unmatchedAtSubmission:number;exceptionCountAtSubmission:number;notes:string;recordedBy:string;recordedAt:string;status:'Pending'|'Verified'|'Flagged';supersedesId?:string;reviewedBy?:string;reviewedAt?:string;reviewNotes?:string;}
 export interface POSDraftHistory {revision:number;at:string;by:string;action:string;before?:{client:string;phone:string;vehicle:string;plate:string;concern:string;date:string;items:Partial<POSLine>[];cogsReviewedAt?:string};after:{client:string;phone:string;vehicle:string;plate:string;concern:string;date:string;items:Partial<POSLine>[];cogsReviewedAt?:string};}
 export interface POS {id:string;no:string;branch:BranchId;date:string;client:string;phone:string;vehicle:string;plate:string;concern:string;items:POSLine[];payments:POSPayment[];draftHistory?:POSDraftHistory[];status:'Pending'|'Closed';parentId?:string;createdBy:string;createdAt:string;closedAt?:string;cogsReviewedAt?:string;cogsReviewedBy?:string;}
+export interface DeletedPOSDraft {id:string;no:string;branch:BranchId;plate:string;deletedAt:string;deletedBy:string;reason:string;original:POS;}
 export interface Count {id:string;branch:BranchId;userId:string;date:string;kind:'BOD'|'EOD';actual:number;expected:number;difference:number;notes:string;createdAt:string;denominations?:Record<string,number>;signature?:string;scope?:'Sales Cash'|'RF'|'RFP';}
 export interface Incident {id:string;branch:BranchId;userId:string;date:string;type:'Missed Opening'|'Missed Closing'|'Missed Sales Turnover'|'Cash Discrepancy'|'Expense Explanation';detail:string;status:'Required'|'Submitted'|'Reviewed';explanation:string;createdAt:string;submittedAt?:string;entryId?:string;reviewedAt?:string;}
 export interface Turnover {id:string;branch:BranchId;date:string;amount:number;notes:string;signature?:string;createdBy:string;createdAt:string;kind?:'Sales'|'Funds';expected?:number;actual?:number;variance?:number;}
 export interface ChangeRequest {id:string;type:'Edit RFP'|'Change Branch';entryId:string;branch:BranchId;requestedBy:string;changes:Partial<FundEntry>;original?:Partial<FundEntry>;reason:string;status:'Pending'|'Approved'|'Rejected';createdAt:string;decidedBy?:string;}
 export interface Audit {id:string;at:string;by:string;action:string;detail:string;}
 export interface Database {
-  users:User[];fundEntries:FundEntry[];pos:POS[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];stockReceipts:StockReceipt[];stockIssues?:StockIssueRequest[];terminalEvents?:TerminalEvent[];terminalSettlements?:TerminalSettlement[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
+  users:User[];fundEntries:FundEntry[];pos:POS[];deletedPOSDrafts?:DeletedPOSDraft[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];stockReceipts:StockReceipt[];stockIssues?:StockIssueRequest[];terminalEvents?:TerminalEvent[];terminalSettlements?:TerminalSettlement[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
   settings:{rfBase:Record<BranchId,number>;rfpBase:Record<BranchId,number>;categories:string[];signatories?:{checked:string;approved:string};reportLogo?:Receipt};
 }
 export const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ID-${Date.now()}-${Math.random().toString(36).slice(2,7)}`);
@@ -84,7 +85,7 @@ export function createSeed():Database {
   {id:'u-pb',username:'pbacc',password:'pb12345',name:'Parts Buyer — Mandaluyong',role:'pb',branch:'UCM',active:true}
  ];
  const empty=():Record<BranchId,number>=>({UCQC:0,UCM:0,UCLP:0,MMM:0});
- return {users,fundEntries:[],pos:[],inventory:[],stockMovements:[],stockRequests:[],stockReceipts:[],stockIssues:[],terminalEvents:[],terminalSettlements:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[],settings:{rfBase:empty(),rfpBase:empty(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
+ return {users,fundEntries:[],pos:[],deletedPOSDrafts:[],inventory:[],stockMovements:[],stockRequests:[],stockReceipts:[],stockIssues:[],terminalEvents:[],terminalSettlements:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[],settings:{rfBase:empty(),rfpBase:empty(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
 }
 
 /** Remove ONLY the recognizable untouched v9.0-v9.8 sample records when loading
@@ -151,7 +152,7 @@ export function removeUntouchedDemoProducts(db:Database):Database {
 }
 
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
-export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];d.stockIssues=d.stockIssues||[];d.terminalEvents=d.terminalEvents||[];d.terminalSettlements=d.terminalSettlements||[];return removeLegacySeedFixtures(removeUntouchedDemoProducts(d));}}}catch{}return createSeed();}
+export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];d.stockIssues=d.stockIssues||[];d.deletedPOSDrafts=d.deletedPOSDrafts||[];d.terminalEvents=d.terminalEvents||[];d.terminalSettlements=d.terminalSettlements||[];return removeLegacySeedFixtures(removeUntouchedDemoProducts(d));}}}catch{}return createSeed();}
 export function storeDB(db:Database):boolean {try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));return true;}catch{return false;}}
 export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
@@ -177,7 +178,7 @@ export function branchFundTotals(db:Database,fund:Fund){
 }
 
 export function nextNumber(db:Database,branch:BranchId,type:'RF'|'RFP'|'POS'):string {
-  const prefix=type==='RF'?`${branch}-Rotating Fund-`:`${branch}-${type}-`;const all=type==='POS'?db.pos.map(v=>v.no):db.fundEntries.filter(v=>v.fund===type).map(v=>v.no);
+  const prefix=type==='RF'?`${branch}-Rotating Fund-`:`${branch}-${type}-`;const all=type==='POS'?[...db.pos.map(v=>v.no),...(db.deletedPOSDrafts||[]).map(v=>v.no)]:db.fundEntries.filter(v=>v.fund===type).map(v=>v.no);
   const max=Math.max(0,...all.filter(v=>v.startsWith(prefix)).map(v=>Number(v.slice(prefix.length))||0));
   return `${prefix}${String(max+1).padStart(8,'0')}`;
 }

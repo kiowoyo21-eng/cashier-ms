@@ -50,3 +50,32 @@ export function saveUnitPOSDraft(db:Database,candidate:POS,by:string):{db:Databa
  const created=reviseDraftHistory(undefined,candidate,by,'Draft created');
  return {db:log({...db,pos:[created,...db.pos]},by,'POS draft created',`${created.no} · ${created.plate} · ${posTotal(created).toFixed(2)}`),pos:created,created:true,changed:true};
 }
+
+/** A deleted draft is removed from active POS but preserved as a local audit snapshot.
+ * NEVER delete an issued, paid, or referenced POS. Re-check all invariants at deletion time. */
+export function draftDeletionIssue(db:Database,pos:POS):string|null{
+ if(pos.status!=='Pending')return 'Closed transactions cannot be deleted.';
+ if(pos.payments.length)return 'This POS already has a payment. Deletion is prohibited.';
+ if((db.terminalEvents||[]).some(e=>e.posId===pos.id))return 'Terminal activity exists for this POS. Reconcile it first.';
+ if((db.stockMovements||[]).some(m=>m.posId===pos.id))return 'Posted stock activity exists for this POS. Deletion is prohibited.';
+ if((db.stockIssues||[]).some(r=>r.posId===pos.id))return 'Stock release request history exists for this POS. Deletion is prohibited.';
+ if((db.stockRequests||[]).some(r=>r.posId===pos.id))return 'Stock correction records exist for this POS. Deletion is prohibited.';
+ if(db.fundEntries.some(e=>e.linkedPosId===pos.id))return 'Linked Parts Buyer purchases exist. Unlink or reconcile them through an authorized workflow before deleting.';
+ if(db.pos.some(p=>p.parentId===pos.id))return 'Linked POS extensions exist. Deletion is prohibited.';
+ return null;
+}
+export function deletePOSDraft(db:Database,posId:string,by:string,reason:string):Database{
+ const actor=db.users.find(u=>u.id===by&&u.active);
+ if(!actor||actor.role!=='cashier')throw new Error('Only an active Cashier can delete a POS draft.');
+ const pos=db.pos.find(p=>p.id===posId);
+ if(!pos)throw new Error('POS draft no longer exists. Refresh the list.');
+ if(pos.branch!==actor.branch)throw new Error('Only the Cashier assigned to this branch may delete its POS draft.');
+ const issue=draftDeletionIssue(db,pos);
+ if(issue)throw new Error(issue);
+ const cleanReason=reason.trim();
+ if(cleanReason.length<5)throw new Error('Please enter a deletion reason (at least 5 characters).');
+ const deletedAt=new Date().toISOString();
+ const snapshot={id:pos.id,no:pos.no,branch:pos.branch,plate:pos.plate,deletedAt,deletedBy:actor.id,reason:cleanReason,original:pos};
+ const next={...db,pos:db.pos.filter(p=>p.id!==pos.id),deletedPOSDrafts:[snapshot,...(db.deletedPOSDrafts||[])]};
+ return log(next,actor.id,'POS draft deleted (archived)',`${pos.no} · ${pos.plate} · ${pos.branch} · Reason: ${cleanReason} · Original draft and revision history retained in archive`);
+}

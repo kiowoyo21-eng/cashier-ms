@@ -113,3 +113,6 @@ Run `npm run check:components` and `npm run test:logic` before `npm run build`. 
 
 ## v9.12 — Receipt Quotation + Global Unit Lock (frontend/local data)
 See `REVISION_STATUS_V9_12.md`. POS drafts are identified by normalized plate and branch. Open transactions on the same unit block other branches within the browser datastore. Same-branch open and unpaid drafts are revised with Draft History instead of duplicated. Quotation rows are entered inline. This is NOT cross-device protection until a backend database is connected.
+
+### v9.13 POS Draft Deletion (frontend only)
+From POS & Sales → Drafts, choose **Delete** next to an open unpaid POS, or open the draft and choose **Delete Draft**. Only the active cashier assigned to that branch may delete; a reason (minimum five characters) and confirmation are required. Drafts with payments, terminal activity, stock movement/release/correction history, PB-linked purchases, or linked POS child transactions are protected from deletion. Deleted drafts no longer appear in active POS or hold the unit lock. The full original draft/revision history is retained in `deletedPOSDrafts` and is shown read-only to Admin in Reports & Audit. POS numbers from deleted drafts remain reserved and are never reused. Browser-local storage is not tamper-proof; production needs protected server-side audit and transactional constraints.
