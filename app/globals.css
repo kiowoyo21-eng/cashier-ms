@@ -572,3 +572,24 @@
 @media(max-width:900px){.disb-journey{grid-template-columns:1fr}.disb-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.disb-form-grid,.disb-form-meta,.disb-detail-grid,.disb-stats{grid-template-columns:1fr}.disb-pagination{gap:10px}.disb-detail-banner>strong{font-size:22px}}
 
 .disb-status-guide{margin-top:12px;border-top:1px solid var(--line,#e2e8f0);padding-top:12px;font-size:12px}.disb-status-guide summary{cursor:pointer;color:var(--muted,#64748b)}.disb-status-guide>div{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+/* v9.21: Source-linked A4 disbursement preview and compact contextual reports */
+.disb-compact-table th{font-size:11px;white-space:normal;min-width:88px}
+.disb-compact-table td{font-size:12px;vertical-align:top}
+.disb-auto-summary{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:14px 18px;margin:10px 0;border-radius:12px;background:var(--surface-muted,#f2f6f8);border:1px solid var(--border,#dde2e8)}
+.disb-auto-summary strong{font-size:22px;margin-left:auto}
+.disb-auto-summary small{flex-basis:100%;color:var(--text-muted,#64748b)}
+.disb-auto-tools{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.disb-auto-totals{display:flex;justify-content:space-between;gap:12px;margin-top:15px;padding:14px 16px;border-top:2px solid #bec9d4;font-size:16px}
+.disb-branch-totals{display:grid;grid-template-columns:1fr;max-width:540px;margin:8px 0 18px;border:1px solid #e1e7eb;border-radius:8px;overflow:hidden}
+.disb-branch-totals>div{display:flex;justify-content:space-between;gap:14px;padding:9px 14px;border-bottom:1px solid #e9eef2}
+.disb-branch-totals>div:last-child{border-bottom:0}
+.disb-branch-totals .disb-grand{background:#eff4f8;font-weight:700}
+.report-bulk-menu{padding:10px 16px;border-bottom:1px solid #e5e9ee}
+.report-bulk-menu summary{cursor:pointer;color:#50637a;font-size:13px;font-weight:600}
+.report-bulk-menu .panel-buttons{justify-content:flex-start;margin-top:12px;flex-wrap:wrap}
+.report-bulk-menu .report-template-picker{margin-top:12px}
+.report-selected-detail{margin:12px 0}
+.report-detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+.data-table tr[role="button"]{cursor:pointer}
+.data-table tr[role="button"]:focus-visible{outline:2px solid #4177a7;outline-offset:-2px}
+@media(max-width:700px){.disb-auto-summary strong{font-size:19px}.disb-compact-table{min-width:650px}.report-detail-actions>.button{flex:1 1 145px;justify-content:center}}

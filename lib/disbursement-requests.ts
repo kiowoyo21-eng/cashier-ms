@@ -3,7 +3,7 @@
  * are external authority boundaries. Do not infer external decisions from
  * CMS admin actions or old RF/RFP replenishment statuses.
  */
-import {BRANCHES,BRANCH_NAME,type BranchId,type Database,type Receipt,type Role,type User,log,uid,todayPH} from './data';
+import {BRANCHES,BRANCH_NAME,expenseGross,balance,type Fund,type FundEntry,type BranchId,type Database,type Receipt,type Role,type User,log,uid,todayPH} from './data';
 
 export const DISBURSEMENT_STATUSES = [
  'Draft','Pending Accounting Approval','Returned by Accounting','Rejected by Accounting',
@@ -27,11 +27,18 @@ export interface DisbursementTimeline {
  from?:DisbursementStatus;to:DisbursementStatus;remarks?:string;changes?:Record<string,{before:unknown;after:unknown}>;
  origin:'cms'|'external';
 }
+/** Immutable source-ledger snapshot, never an independent expense or a payment. */
+export interface GeneratedDisbursementLine {
+ sourceId:string; reference:string;date:string;branch:BranchId;amount:number;onlineCharge:number;total:number;
+ remarks:string;receiptNo:string;status:string;receiptName?:string;
+}
 export interface DisbursementRequest {
  id:string;requestNo:string;schemaVersion:1;
  requestDate:string;requestorId:string;requestorName:string;employeeId:string;
  requestorRole:DisbursementRequestorRole;branch:BranchId;
  category:string;purpose:string;amount:number;attachments:Receipt[];remarks:string;
+ sourceMode?:'generated'|'legacy-manual';sourceFund?:Fund;sourceExpenseIds?:string[];sourceLines?:GeneratedDisbursementLine[];sourceBranches?:BranchId[];
+ sourceBalances?:Partial<Record<BranchId,{fundBalance:number;expenses:number;remaining:number}>>;
  status:DisbursementStatus;revision:number;createdAt:string;updatedAt:string;submittedAt?:string;
  accounting?:ExternalDecision;msKate?:ExternalDecision;
  approvedForReleaseAt?:string;release?:DisbursementRelease;reconciliation?:DisbursementReconciliation;
@@ -97,10 +104,17 @@ export function editDisbursementDraft(db:Database,id:string,u:User,fields:Disbur
 export function submitDisbursementRequest(db:Database,id:string,u:User):Database {
  const r=requests(db).find(x=>x.id===id);if(!r)throw new Error('Request not found.');requireOwner(r,u);
  if(!['Draft','Returned by Accounting','Returned by Ms Kate'].includes(r.status))throw new Error('Only draft or returned requests may be submitted.');
- validateFields({requestDate:r.requestDate,branch:r.branch,category:r.category,purpose:r.purpose,amount:r.amount,attachments:r.attachments,remarks:r.remarks},u);
+ if(r.sourceMode!=='generated')validateFields({requestDate:r.requestDate,branch:r.branch,category:r.category,purpose:r.purpose,amount:r.amount,attachments:r.attachments,remarks:r.remarks},u);
+ if(r.sourceMode==='generated'){
+  const sourceIds=r.sourceExpenseIds||[];
+  const available=eligibleFundExpenses(db,u,r.sourceFund||'RF',r.id);
+  if(!sourceIds.length||sourceIds.some(id=>!available.some(e=>e.id===id)))throw new Error('Some linked expenses are missing, rejected or included in another request. Rebuild the draft first.');
+  const snapshot=makeGeneratedSnapshot(db,sourceIds,r.sourceFund||'RF');
+  if(snapshot.amount!==r.amount||snapshot.lines.some((line,i)=>line.total!==r.sourceLines?.[i]?.total||line.sourceId!==r.sourceLines?.[i]?.sourceId||line.receiptName!==r.sourceLines?.[i]?.receiptName))throw new Error('An expense amount or payment charge changed. Reopen and save the regenerated draft before submission.');
+ }
  if(r.status.startsWith('Returned')){
   const lastReturn=r.timeline.map((t,i)=>({t,i})).filter(x=>x.t.to===r.status&&x.t.origin==='external').pop();
-  const hadCorrections=r.timeline.some((t,i)=>t.action==='Draft revised'&&(!lastReturn||i>lastReturn.i));
+  const hadCorrections=r.timeline.some((t,i)=>(t.action==='Draft revised'||t.action==='Generated draft revised')&&(!lastReturn||i>lastReturn.i));
   if(!hadCorrections)throw new Error('Edit and save corrections before resubmitting a returned request.');
  }
  const at=clock();const changed:DisbursementRequest={...r,status:'Pending Accounting Approval',updatedAt:at,submittedAt:at,
@@ -121,5 +135,70 @@ export function externallyConsistent(r:DisbursementRequest):boolean{
  return true;
 }
 export function visibleDisbursements(db:Database,u:User,adminBranch:BranchId|'ALL'='ALL'){
- return requests(db).filter(r=>u.role==='admin'?(adminBranch==='ALL'||r.branch===adminBranch):(r.requestorId===u.id&&(u.role==='pb'||r.branch===u.branch)));
+ return requests(db).filter(r=>u.role==='admin'?(adminBranch==='ALL'||(r.sourceBranches||[r.branch]).includes(adminBranch)):(r.requestorId===u.id&&(u.role==='pb'||r.branch===u.branch)));
+}
+
+
+/** Actual expense ledger is the only amount source; "Disbursement Request" never asks the user to type totals. */
+export function eligibleFundExpenses(db:Database,u:User,fund:Fund,editingRequestId?:string):FundEntry[]{
+ if(!isDisbursementCreator(u)||fund!==(u.role==='pb'?'RFP':'RF'))return [];
+ const reserved=new Set((db.disbursementRequests||[]).filter(r=>r.id!==editingRequestId&&r.sourceMode==='generated'&&!['Rejected by Accounting','Rejected by Ms Kate'].includes(r.status)).flatMap(r=>r.sourceExpenseIds||[]));
+ const previousReplenishments=BRANCHES.map(b=>({branch:b.id,cutoff:db.fundEntries.filter(e=>e.branch===b.id&&e.fund===fund&&e.kind==='replenishment'&&e.status==='Approved').sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0]?.createdAt||''}));
+ const branchIsInLegacyPending=new Set(db.fundEntries.filter(e=>e.kind==='replenishment'&&e.fund===fund&&e.status==='Pending').map(e=>e.branch));
+ return db.fundEntries.filter(e=>e.kind==='expense'&&e.fund===fund&&e.status!=='Rejected'&&e.status!=='Report Required'&&e.status!=='Report Submitted'&&!(u.role==='cashier'&&e.branch!==u.branch)&&!branchIsInLegacyPending.has(e.branch)&&e.createdAt>(previousReplenishments.find(b=>b.branch===e.branch)?.cutoff||'')&&!reserved.has(e.id))
+  .sort((a,b)=>a.date.localeCompare(b.date)||a.no.localeCompare(b.no));
+}
+export function makeGeneratedSnapshot(db:Database,ids:string[],fund:Fund){
+ const idset=new Set(ids);
+ const lines:GeneratedDisbursementLine[]=db.fundEntries.filter(e=>idset.has(e.id)&&e.fund===fund&&e.kind==='expense')
+  .sort((a,b)=>a.date.localeCompare(b.date)||a.no.localeCompare(b.no)||a.id.localeCompare(b.id))
+  .map(e=>({sourceId:e.id,reference:e.no,date:e.date,branch:e.branch,amount:e.amount,onlineCharge:e.onlineCharge||0,total:expenseGross(e),remarks:e.plate?`Car (${e.plate}) · ${e.description}`:e.description||e.notes||e.category,receiptNo:e.receiptNo,status:e.status,receiptName:e.proof?.name}));
+ const amount=Math.round(lines.reduce((sum,l)=>sum+l.total,0)*100)/100;
+ // Receipts stay in the original FundEntry; request snapshots store stable source IDs + names, not duplicated base64.
+ const attachments:Receipt[]=[];
+ const branches=BRANCHES.map(b=>b.id).filter(b=>lines.some(l=>l.branch===b));
+ const sourceBalances:NonNullable<DisbursementRequest['sourceBalances']>={};
+ for(const branch of (fund==='RFP'?BRANCHES.map(b=>b.id):branches)){
+  const expenses=Math.round(lines.filter(l=>l.branch===branch).reduce((sum,l)=>sum+l.total,0)*100)/100;
+  const remaining=balance(db,branch,fund);
+  sourceBalances[branch]={fundBalance:Math.round((remaining+expenses)*100)/100,expenses,remaining};
+ }
+ return {lines,amount,attachments,branches,sourceBalances};
+}
+function validateSourceSelection(db:Database,u:User,fund:Fund,ids:string[],editingRequestId?:string){
+ if(!isDisbursementCreator(u))throw new Error('Only active Cashier/PB accounts can prepare requests.');
+ if(fund!==(u.role==='pb'?'RFP':'RF'))throw new Error('The request fund must match your assigned role.');
+ if(!ids.length||new Set(ids).size!==ids.length)throw new Error('Select one or more distinct recorded expenses.');
+ const allowed=new Set(eligibleFundExpenses(db,u,fund,editingRequestId).map(e=>e.id));
+ if(ids.some(id=>!allowed.has(id)))throw new Error('A selected expense is unavailable, rejected, reserved by another request or outside your branch.');
+ const snapshot=makeGeneratedSnapshot(db,ids,fund);
+ if(snapshot.lines.length!==ids.length||snapshot.amount<=0)throw new Error('Invalid expense selection or total.');
+ return snapshot;
+}
+/** Resolve read-only receipt links on demand. Keep PDF/image bytes in the original expense record only. */
+export function resolvedRequestReceipts(db:Database,r:Pick<DisbursementRequest,'sourceMode'|'sourceExpenseIds'|'attachments'>):Receipt[]{
+ if(r.sourceMode!=='generated')return r.attachments||[];
+ const seen=new Set<string>();const result:Receipt[]=[];
+ for(const id of r.sourceExpenseIds||[]){const proof=db.fundEntries.find(e=>e.id===id)?.proof;if(!proof)continue;const key=`${proof.name}:${proof.data}`;if(!seen.has(key)){seen.add(key);result.push(proof);}}
+ return result;
+}
+export function createGeneratedDisbursement(db:Database,u:User,fund:Fund,ids:string[],remarks=''):Database{
+ const s=validateSourceSelection(db,u,fund,ids);const branch=u.role==='cashier'?u.branch:(s.branches[0]||u.branch),at=clock();
+ const r:DisbursementRequest={id:uid(),requestNo:nextNo(db,branch),schemaVersion:1,requestDate:todayPH(),requestorId:u.id,requestorName:u.name,employeeId:u.id,requestorRole:u.role as DisbursementRequestorRole,branch,category:fund==='RFP'?'Parts Fund Replenishment':'Revolving Fund Replenishment',purpose:`Replenish ${s.lines.length} recorded ${fund} expense(s)`,amount:s.amount,attachments:s.attachments,remarks:remarks.trim(),status:'Draft',revision:1,createdAt:at,updatedAt:at,sourceMode:'generated',sourceFund:fund,sourceExpenseIds:[...ids],sourceLines:s.lines,sourceBranches:s.branches,sourceBalances:s.sourceBalances,timeline:[]};
+ r.timeline=[timeline(r,u,'Auto-generated from recorded expenses','Draft',`${ids.length} source ledger rows; source amounts and receipts copied as a review snapshot`)];
+ return audit({...db,disbursementRequests:[r,...requests(db)]},r,u,'Auto-generated',`${ids.length} ${fund} expenses · PHP ${r.amount.toFixed(2)} · no financial posting`);
+}
+export function reviseGeneratedDisbursement(db:Database,id:string,u:User,ids:string[],remarks:string):Database{
+ const r=requests(db).find(x=>x.id===id);if(!r||r.sourceMode!=='generated')throw new Error('Generated request not found.');
+ requireOwner(r,u);
+ if(!['Draft','Returned by Accounting','Returned by Ms Kate'].includes(r.status))throw new Error('Request is locked.');
+ const fund=r.sourceFund||'RF',s=validateSourceSelection(db,u,fund,ids,id);
+ const changes:NonNullable<DisbursementTimeline['changes']>={};
+ if(r.amount!==s.amount)changes.amount={before:r.amount,after:s.amount};
+ if(JSON.stringify(r.sourceExpenseIds)!==JSON.stringify(ids))changes.sourceExpenseIds={before:r.sourceExpenseIds||[],after:ids};
+ if(r.remarks!==remarks.trim())changes.remarks={before:r.remarks,after:remarks.trim()};
+ if(JSON.stringify(r.sourceLines)!==JSON.stringify(s.lines))changes.sourceSnapshot={before:r.sourceLines?.map(x=>({id:x.sourceId,total:x.total})),after:s.lines.map(x=>({id:x.sourceId,total:x.total}))};
+ if(!Object.keys(changes).length)return db;
+ const changed:DisbursementRequest={...r,amount:s.amount,attachments:s.attachments,remarks:remarks.trim(),sourceExpenseIds:[...ids],sourceLines:s.lines,sourceBranches:s.branches,sourceBalances:s.sourceBalances,revision:r.revision+1,updatedAt:clock(),timeline:[...r.timeline,timeline(r,u,'Generated draft revised',r.status,`Source-ledger revision ${r.revision+1}`,changes)]};
+ return audit({...db,disbursementRequests:requests(db).map(x=>x.id===id?changed:x)},r,u,'Generated draft revised',`Revision ${changed.revision} · source expenses ${ids.length}`);
 }

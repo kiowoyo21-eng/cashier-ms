@@ -36,7 +36,7 @@ export const BRANCH_NAME = (id:BranchId) => BRANCHES.find(b=>b.id===id)?.name ||
 export interface User {id:string;username:string;password:string;name:string;role:Role;branch:BranchId;active:boolean;lastLoginDate?:string;}
 export interface Receipt {name:string;data:string}
 export interface FundEntry {
-  id:string;no:string;fund:Fund;kind:'expense'|'replenishment';branch:BranchId;date:string;amount:number;category:string;payee:string;vat:'VAT'|'Non-VAT';voucher:string;receiptNo:string;tin:string;description:string;notes:string;proof?:Receipt;signature?:string;
+  id:string;no:string;fund:Fund;kind:'expense'|'replenishment';branch:BranchId;date:string;amount:number;category:string;payee:string;vat:'VAT'|'Non-VAT';voucher:string;receiptNo:string;tin:string;description:string;notes:string;proof?:Receipt;signature?:string;onlineCharge?:number;
   status:Status;createdBy:string;createdAt:string;decisionBy?:string;decisionAt?:string;decisionNote?:string;
   plate?:string;car?:string;quantity?:number;unitCost?:number;linkedPosId?:string;purchaseId?:string;checkNo?:string;bank?:string;depositDate?:string;
   /** Frontend-only review stages. Production Accounting and President approvals must be authenticated through shared Supabase. */
@@ -174,9 +174,10 @@ export function removeUntouchedDemoProducts(db:Database):Database {
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
 export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];d.stockIssues=d.stockIssues||[];d.deletedPOSDrafts=d.deletedPOSDrafts||[];d.disbursementRequests=d.disbursementRequests||[];d.terminalEvents=d.terminalEvents||[];d.terminalSettlements=d.terminalSettlements||[];const cleaned=removeLegacySeedFixtures(removeUntouchedDemoProducts(d));const officeRaw=localStorage.getItem('uc_report_studio_v1');let hasFiles=false;try{hasFiles=Array.isArray(JSON.parse(officeRaw||'[]'))&&JSON.parse(officeRaw||'[]').length>0;}catch{hasFiles=!!officeRaw;}return removeEmptyDemoAccounts(cleaned,hasFiles);}}}catch{}return createSeed();}
 export function storeDB(db:Database):boolean {try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));return true;}catch{return false;}}
+export const expenseGross=(entry:Pick<FundEntry,'amount'|'onlineCharge'>)=>Math.round((entry.amount+(entry.onlineCharge||0))*100)/100;
 export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
- return db.fundEntries.filter(e=>e.branch===branch&&e.fund===fund&&e.status!=='Rejected').reduce((sum,e)=>sum+(e.kind==='replenishment'?(e.status==='Approved'?e.amount:0):-e.amount),initial);
+ return db.fundEntries.filter(e=>e.branch===branch&&e.fund===fund&&e.status!=='Rejected').reduce((sum,e)=>sum+(e.kind==='replenishment'?(e.status==='Approved'?e.amount:0):-expenseGross(e)),initial);
 }
 /** Only replace cash that has already been spent and not yet replenished. 
  * Pending replenishments are not included in the cash-on-hand balance; a second
@@ -190,7 +191,7 @@ export function replenishmentDue(db:Database, branch:BranchId, fund:Fund):number
 export function branchFundTotals(db:Database,fund:Fund){
  const rows=BRANCHES.map(b=>{
   const target=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[b.id]||0;
-  const expenses=db.fundEntries.filter(e=>e.branch===b.id&&e.fund===fund&&e.kind==='expense'&&e.status!=='Rejected').reduce((n,e)=>n+e.amount,0);
+  const expenses=db.fundEntries.filter(e=>e.branch===b.id&&e.fund===fund&&e.kind==='expense'&&e.status!=='Rejected').reduce((n,e)=>n+expenseGross(e),0);
   const received=db.fundEntries.filter(e=>e.branch===b.id&&e.fund===fund&&e.kind==='replenishment'&&e.status==='Approved').reduce((n,e)=>n+e.amount,0);
   return {branch:b.id,name:b.name,target,expenses,received,remaining:balance(db,b.id,fund),toReplenish:replenishmentDue(db,b.id,fund)};
  });
@@ -574,7 +575,7 @@ export function downloadFile(name:string,content:string,mime='text/csv;charset=u
   const blob=new Blob([content],{type:mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
 
-export function categoryTotals(entries:FundEntry[]) {return entries.filter(e=>e.fund==='RF'&&e.kind==='expense'&&e.status!=='Rejected').reduce<Record<string,number>>((result,e)=>{result[e.category]=(result[e.category]||0)+e.amount;return result;},{});}
+export function categoryTotals(entries:FundEntry[]) {return entries.filter(e=>e.fund==='RF'&&e.kind==='expense'&&e.status!=='Rejected').reduce<Record<string,number>>((result,e)=>{result[e.category]=(result[e.category]||0)+expenseGross(e);return result;},{});}
 export function matchingPOS(db:Database,branch:BranchId,plate:string) {return db.pos.filter(p=>p.branch===branch&&normalizePlate(p.plate)===normalizePlate(plate)).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));}
 /** Frontend-only plate directory for POS suggestions. Prefer latest POS contact and PB car when no sale yet. */
 export function plateSuggestions(db:Database,branch:BranchId,term:string){
@@ -628,10 +629,10 @@ export function assignConsumedStockToPOS(db:Database,branch:BranchId,rawPlate:st
 export function disbursementSummary(db:Database,branch:BranchId,fund:Fund,from='',to=''){
  const base=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;
  const rows=db.fundEntries.filter(e=>e.branch===branch&&e.fund===fund&&e.status!=='Rejected');
- const signed=(e:FundEntry)=>e.kind==='expense'?-e.amount:e.status==='Approved'?e.amount:0;
+ const signed=(e:FundEntry)=>e.kind==='expense'?-expenseGross(e):e.status==='Approved'?e.amount:0;
  const opening=base+rows.filter(e=>!!from&&e.date<from).reduce((n,e)=>n+signed(e),0);
  const period=rows.filter(e=>reportDateMatch(e.date,from,to));
- const expenses=period.filter(e=>e.kind==='expense').reduce((n,e)=>n+e.amount,0);
+ const expenses=period.filter(e=>e.kind==='expense').reduce((n,e)=>n+expenseGross(e),0);
  const deposits=period.filter(e=>e.kind==='replenishment'&&e.status==='Approved').reduce((n,e)=>n+e.amount,0);
  const remaining=opening+deposits-expenses;
  return {base,opening,expenses,deposits,remaining,amountRequested:Math.max(0,base-remaining),period,checkDeposits:period.filter(e=>e.kind==='replenishment'&&e.status==='Approved')};

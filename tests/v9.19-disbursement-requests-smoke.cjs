@@ -53,9 +53,9 @@ try{
  assert.equal(data.loadDB().users.length,3,'Preserves existing accounts');
  assert.equal(data.loadDB().fundEntries.length,0,'No change to existing fund ledger');
  const ui=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');const component=fs.readFileSync(path.join(root,'components/DisbursementWorkspace.tsx'),'utf8');
- assert(ui.includes("key:'disbursements',label:'Disbursement Requests'")&&ui.includes("view==='disbursements'"));
+ assert(ui.includes("view==='disbursements'")&&ui.includes("Prepare / Track Disbursement"));
  assert(!/Simulate Accounting|Simulate Ms Kate|Approve External/.test(component),'No external impersonation controls');
- assert(component.includes('Pending Accounting Approval')&&component.includes('Approval Journey'));
+ assert(component.includes('Pending Accounting')&&component.includes('Approval Routing'));
  let ts;try{ts=require('typescript')}catch{ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript')}
  for(const file of ['app/page.tsx','components/DisbursementWorkspace.tsx']){
   const source=fs.readFileSync(path.join(root,file),'utf8');const parsed=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);

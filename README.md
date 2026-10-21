@@ -1,3 +1,5 @@
+> **Latest frontend revision: v9.21 — Auto-Generated Disbursements.** PB and Cashier select already-recorded RFP/RF expenses to prepare one request with automatically computed charges, consolidated four-branch PB summary or one-branch Cashier summary, source-linked receipts, A4 portrait paper, downloadable PDF with receipts, approval timeline, and contextual Reports actions. No duplicated expenses, copied receipt blobs or fabricated Accounting/Ms Kate approvals. See `REVISION_STATUS_V9_21.md`.
+
 > **Latest frontend revision: v9.17.1** — Login upgrade hotfix: existing accounts are no longer silently deleted when upgrading. New installs remain empty. First-time Admin setup includes **Restore existing backup (JSON)** to recover a prior local account database if a backup exists. See `REVISION_STATUS_V9_17_1.md`.
 
 > **Latest frontend revision: v9.17** — Parts Purchase now shows assigned Branch, Brand/Model and Year are optional, and Admin Settings includes confirmed Clear App Local Storage with complete backup/restore. See `REVISION_STATUS_V9_17.md`.

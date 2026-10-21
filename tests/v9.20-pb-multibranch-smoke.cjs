@@ -45,7 +45,7 @@ try{
  assert(ui.includes("nextNumber(db,purchaseBranch,'RFP')"),'RFP reference numbering is branch-scoped');
  assert(ui.includes('replenishmentDue(db,currentBranch,fund)'),'Existing PB replenishment uses the active selected branch');
  assert(comp.includes('currentBranch={currentBranch}')===false); // received as prop, not passed within component
- assert(comp.includes("disabled={user.role!=='pb'||!!active}"),'PB may choose request branch, existing request is locked');
+ assert(comp.includes("fund==='RFP'")||comp.includes("user.role==='pb'?'All four branches'"),'PB requests consolidate all four branches with no manual branch amount');
  assert(!/Simulate Accounting|Simulate Ms Kate|Approve External/.test(comp),'No external approval impersonation');
  let ts;try{ts=require('typescript')}catch{ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript')}
  for(const file of ['app/page.tsx','components/DisbursementWorkspace.tsx']){
