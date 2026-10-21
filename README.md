@@ -128,3 +128,12 @@ See `REVISION_STATUS_V9_12.md`. POS drafts are identified by normalized plate an
 
 ### v9.13 POS Draft Deletion (frontend only)
 From POS & Sales → Drafts, choose **Delete** next to an open unpaid POS, or open the draft and choose **Delete Draft**. Only the active cashier assigned to that branch may delete; a reason (minimum five characters) and confirmation are required. Drafts with payments, terminal activity, stock movement/release/correction history, PB-linked purchases, or linked POS child transactions are protected from deletion. Deleted drafts no longer appear in active POS or hold the unit lock. The full original draft/revision history is retained in `deletedPOSDrafts` and is shown read-only to Admin in Reports & Audit. POS numbers from deleted drafts remain reserved and are never reused. Browser-local storage is not tamper-proof; production needs protected server-side audit and transactional constraints.
+
+## v9.18 — Clickable demo login shortcuts (frontend-only)
+
+- New browser storage remains empty: no automatically seeded accounts, sales, inventory, fund balances or transactions.
+- On the **Create Administrator** first-run screen, **Enable Demo Logins** is an explicit testing-only action. After confirmation, it creates three LOCAL test roles and shows Admin, Cashier and Parts Buyer clickable login shortcuts. Clicking a role fills its test username/password; then click Sign in.
+- Existing accounts/data are never overwritten by this action. If previous records or Docs/Sheets files exist, recover the previous backup instead of generating test accounts.
+- Quick-fill shortcuts are shown only when matching active test users still exist with their exact test credentials. Altered passwords/disabled users hide that shortcut.
+- This is **not** secure production authentication and must not be used for real collections.
+- The PWA cache has been bumped and JS/style assets favor fresh network bundles while online.
