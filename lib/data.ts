@@ -1,3 +1,4 @@
+import type {DisbursementRequest} from './disbursement-requests';
 export type Role = 'admin'|'cashier'|'pb';
 export type Status = 'Pending'|'Approved'|'Rejected'|'Report Required'|'Report Submitted';
 export type Fund = 'RF'|'RFP';
@@ -69,7 +70,7 @@ export interface Turnover {id:string;branch:BranchId;date:string;amount:number;n
 export interface ChangeRequest {id:string;type:'Edit RFP'|'Change Branch';entryId:string;branch:BranchId;requestedBy:string;changes:Partial<FundEntry>;original?:Partial<FundEntry>;reason:string;status:'Pending'|'Approved'|'Rejected';createdAt:string;decidedBy?:string;}
 export interface Audit {id:string;at:string;by:string;action:string;detail:string;}
 export interface Database {
-  users:User[];fundEntries:FundEntry[];pos:POS[];deletedPOSDrafts?:DeletedPOSDraft[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];stockReceipts:StockReceipt[];stockIssues?:StockIssueRequest[];terminalEvents?:TerminalEvent[];terminalSettlements?:TerminalSettlement[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
+  users:User[];fundEntries:FundEntry[];disbursementRequests?:DisbursementRequest[];pos:POS[];deletedPOSDrafts?:DeletedPOSDraft[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];stockReceipts:StockReceipt[];stockIssues?:StockIssueRequest[];terminalEvents?:TerminalEvent[];terminalSettlements?:TerminalSettlement[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
   settings:{rfBase:Record<BranchId,number>;rfpBase:Record<BranchId,number>;categories:string[];signatories?:{checked:string;approved:string};reportLogo?:Receipt};
 }
 export const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ID-${Date.now()}-${Math.random().toString(36).slice(2,7)}`);
@@ -83,7 +84,7 @@ export const number = (v:unknown) => Math.max(0,Number(v)||0);
  * The first administrator creates an account through the one-time setup screen. */
 export function createSeed():Database {
  const empty=():Record<BranchId,number>=>({UCQC:0,UCM:0,UCLP:0,MMM:0});
- return {users:[],fundEntries:[],pos:[],deletedPOSDrafts:[],inventory:[],stockMovements:[],stockRequests:[],stockReceipts:[],stockIssues:[],terminalEvents:[],terminalSettlements:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[],settings:{rfBase:empty(),rfpBase:empty(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
+ return {users:[],fundEntries:[],disbursementRequests:[],pos:[],deletedPOSDrafts:[],inventory:[],stockMovements:[],stockRequests:[],stockReceipts:[],stockIssues:[],terminalEvents:[],terminalSettlements:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[],settings:{rfBase:empty(),rfpBase:empty(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
 }
 
 /** Frontend-only first-run bootstrap. No preconfigured passwords or seed accounts. */
@@ -132,7 +133,7 @@ export function removeLegacySeedFixtures(db:Database):Database {
  if(!removed)return db;
  // Clear inherited demo fund balances only if the browser had *nothing else*
  // besides the three original seed expenses and original seed POS.
- const noGenuineRecords=!pos.length&&!fundEntries.length&&!db.inventory.length&&!db.stockMovements.length&&!db.stockRequests.length&&!db.stockReceipts.length&&!(db.stockIssues||[]).length&&!(db.terminalEvents||[]).length&&!(db.terminalSettlements||[]).length&&!db.counts.length&&!db.incidents.length&&!db.turnovers.length&&!db.requests.length&&!audit.length;
+ const noGenuineRecords=!(db.disbursementRequests||[]).length&&!pos.length&&!fundEntries.length&&!db.inventory.length&&!db.stockMovements.length&&!db.stockRequests.length&&!db.stockReceipts.length&&!(db.stockIssues||[]).length&&!(db.terminalEvents||[]).length&&!(db.terminalSettlements||[]).length&&!db.counts.length&&!db.incidents.length&&!db.turnovers.length&&!db.requests.length&&!audit.length;
  const initialAmountsUnchanged=BRANCHES.every(b=>db.settings.rfBase[b.id]===50000&&db.settings.rfpBase[b.id]===120000);
  const settings=noGenuineRecords&&initialAmountsUnchanged?{...db.settings,rfBase:{UCQC:0,UCM:0,UCLP:0,MMM:0},rfpBase:{UCQC:0,UCM:0,UCLP:0,MMM:0}}:db.settings;
  const cleanAudit=noGenuineRecords?audit:[{id:uid(),at:new Date().toISOString(),by:'system',action:'Legacy demo fixture cleanup',detail:`Removed ${db.pos.length-pos.length} untouched sample POS and ${db.fundEntries.length-fundEntries.length} untouched sample fund expense(s). Preserved genuine transactions and references.`},...audit];
@@ -171,7 +172,7 @@ export function removeUntouchedDemoProducts(db:Database):Database {
 }
 
 export const STORAGE_KEY = 'underchargers-fund-management-demo-v1';
-export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];d.stockIssues=d.stockIssues||[];d.deletedPOSDrafts=d.deletedPOSDrafts||[];d.terminalEvents=d.terminalEvents||[];d.terminalSettlements=d.terminalSettlements||[];const cleaned=removeLegacySeedFixtures(removeUntouchedDemoProducts(d));const officeRaw=localStorage.getItem('uc_report_studio_v1');let hasFiles=false;try{hasFiles=Array.isArray(JSON.parse(officeRaw||'[]'))&&JSON.parse(officeRaw||'[]').length>0;}catch{hasFiles=!!officeRaw;}return removeEmptyDemoAccounts(cleaned,hasFiles);}}}catch{}return createSeed();}
+export function loadDB():Database {if(typeof window==='undefined')return createSeed();try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s) as Database;if(d?.settings?.rfBase && Array.isArray(d.users) && Array.isArray(d.pos) && Array.isArray(d.fundEntries)){const legacy=['Shop Supplies','Cleaning','Maintenance','Other'];const categories=d.settings.categories||[];d.settings.categories=[...RF_CATEGORIES,...categories.filter(c=>!legacy.includes(c)&&!RF_CATEGORIES.some(a=>a===c))];d.settings.signatories=d.settings.signatories||{checked:'',approved:''};d.turnovers=(d.turnovers||[]).map(t=>({...t,kind:t.kind||'Sales',actual:t.actual??t.amount}));d.inventory=d.inventory||[];d.stockMovements=d.stockMovements||[];d.stockRequests=d.stockRequests||[];d.stockReceipts=d.stockReceipts||[];d.stockIssues=d.stockIssues||[];d.deletedPOSDrafts=d.deletedPOSDrafts||[];d.disbursementRequests=d.disbursementRequests||[];d.terminalEvents=d.terminalEvents||[];d.terminalSettlements=d.terminalSettlements||[];const cleaned=removeLegacySeedFixtures(removeUntouchedDemoProducts(d));const officeRaw=localStorage.getItem('uc_report_studio_v1');let hasFiles=false;try{hasFiles=Array.isArray(JSON.parse(officeRaw||'[]'))&&JSON.parse(officeRaw||'[]').length>0;}catch{hasFiles=!!officeRaw;}return removeEmptyDemoAccounts(cleaned,hasFiles);}}}catch{}return createSeed();}
 export function storeDB(db:Database):boolean {try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));return true;}catch{return false;}}
 export function balance(db:Database,branch:BranchId,fund:Fund):number {
  const initial=(fund==='RF'?db.settings.rfBase:db.settings.rfpBase)[branch]||0;

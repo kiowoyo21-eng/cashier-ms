@@ -137,3 +137,9 @@ From POS & Sales → Drafts, choose **Delete** next to an open unpaid POS, or op
 - Quick-fill shortcuts are shown only when matching active test users still exist with their exact test credentials. Altered passwords/disabled users hide that shortcut.
 - This is **not** secure production authentication and must not be used for real collections.
 - The PWA cache has been bumped and JS/style assets favor fresh network bundles while online.
+
+## v9.19 — CMS Disbursement Requests (PB & Cashier)
+
+A separate **Disbursement Requests** sidebar page is available to PB, Cashier and Admin. PB/Cashier can create and save drafts, submit to *Pending Accounting Approval*, see their own branch-scoped requests, review timeline/history/attachments, and edit + resubmit externally returned requests. Admin has read-only branch-filtered CMS request oversight; no CMS role can impersonate Accounting, Ms Kate, or payment-release authority.
+
+This new request ledger is **distinct from the existing RF/RFP expense and replenishment ledger**, which is preserved unchanged. New requests do not change fund balances, record payments or communicate with other applications. Local storage persists data in this browser only. See `DISBURSEMENT_SHARED_DATABASE_CONTRACT_V1.md` for the future shared-database schema and integration boundaries (Accounting and HRMS; **ERP excluded entirely**), and `REVISION_STATUS_V9_19.md` for the changed files and tests.
