@@ -58,7 +58,7 @@ export async function downloadDisbursementPDF(r:DisbursementRequest):Promise<voi
  txt((r.sourceFund==='RFP'?'RFP':r.sourceFund==='RF'?'REVOLVING FUND':'LEGACY')+' DISBURSEMENT REQUEST',margin,y,14,true);y-=23;
  txt('Request: '+r.requestNo,margin,y,8.4,true);y-=15;
  txt('Date: '+r.requestDate+'   Status: '+r.status,margin,y,8);y-=14;
- txt('Prepared by: '+r.requestorName+' ('+r.requestorRole+')',margin,y,8);y-=14;
+ txt('Prepared by: '+r.requestorName+' ('+(r.requestorRole==='pb'?'Parts Buyer':'Cashier')+')',margin,y,8);y-=14;
  if(r.coverageUntil){txt('Cycle snapshot: '+r.coverageUntil,margin,y,7.6);y-=12;}
  divider();heading('1. DISBURSEMENT TRANSACTION SUMMARY');
  const widths=[75,118,100,98,tableW-75-118-100-98];
