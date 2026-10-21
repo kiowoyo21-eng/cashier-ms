@@ -154,3 +154,7 @@ This new request ledger is **distinct from the existing RF/RFP expense and reple
 - Account Management shows PB access as `All branches` and keeps the existing assigned branch as their initial/default selection. No new accounts, demo transactions, or data resets were introduced.
 - This is **frontend-only / local browser data**. Cross-device access restrictions and role/branch membership will require server-side authorization in the future shared database.
 - Validation: `npm run test:logic`, `npm run check:components`, `npm run check:view-maps` passed. Full Next.js production build/typecheck requires installed project dependencies and has **not** been verified in this environment.
+
+## v9.22 — Automatic Disbursement Paper Review
+
+The **Disbursement Requests** page now opens a consolidated, paper-style request generated automatically from all eligible RF/RFP expense records: **PB: four branches; Cashier: assigned branch only**. There is no longer an expense checkbox/selection stage. Existing saved requests remain accessible and previous submitted snapshots are retained. From the paper view, staff can open original receipts and download/print the A4 document. Pending external approvals are not simulated. See `REVISION_STATUS_V9_22.md` for details and release-cycle caveats.

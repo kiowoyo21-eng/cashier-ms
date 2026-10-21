@@ -51,3 +51,13 @@ Browser `localStorage` is editable and per-browser; it is not cross-device, tamp
 - Compute expense totals as `base_amount + online_payment_charge`, rounded to cents. Do not use online charge as a new independently postable payment. Rejected, already-reserved, or invalid expenses must not enter new generated requests. A request can be saved as Draft and explicitly submitted to Accounting; no approval or release is implied.
 - **Legacy records:** do not delete previously generated manual-request, RF/RFP replenishment or approval records. Existing legacy requests remain accessible as read-only history in the v9.21 UI; new submission is from linked RF/RFP expenses only. No existing replenishment is auto-converted to a payment.
 - Before enabling a shared backend: add server/database uniqueness for request-source mappings, transactional request creation, RLS for Cashier branches/PB authorized branches, version-bound approval signatures, auditable corrections, immutable receipt references and authorized release/reconciliation. ERP remains entirely separate.
+
+## v9.22 — generated-cycle and cutoff semantics (frontend prototype)
+
+- `sourceExpenseIds` are automatically derived from all eligible ledger entries for the appropriate role's fund/scope; the UI no longer accepts an arbitrary subset.
+- `coverageCutoffs[branch] = {at, source}` and `coverageUntil` are optional, backward-compatible request snapshot metadata. They are informational and preserve what was used at draft generation/revision.
+- Only an actual recorded `Released / Paid` or `Reconciled` disbursement with valid release timestamp advances a confirmed release boundary. Status-only Accounting or Ms Kate approval **does not** advance this boundary.
+- Legacy Approved replenishment entries may still define an **explicitly unverified legacy boundary** when no later released disbursement exists; these must be reconciled during database migration. Do not silently assert they were paid.
+- Unclaimed expenses predating a confirmed release should carry forward to the next cycle rather than disappear. Expenses that have already been released/paid are never included again.
+- One active generated request per RFP all-branch cycle, or per Cashier RF branch. On the shared database this requires unique/serializable server constraints and transactional conflict checks, not localStorage-only checks.
+- After submission, the request retains its source and amount snapshot. Receipt bodies are resolved from source expense records by stable IDs to avoid localStorage duplication; the future backend must make attachments immutable/versioned for approval integrity.

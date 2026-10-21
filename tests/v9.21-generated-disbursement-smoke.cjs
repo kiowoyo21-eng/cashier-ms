@@ -36,11 +36,11 @@ try{
  const sourceSnapshot=JSON.parse(JSON.stringify(db));assert.equal(sourceSnapshot.disbursementRequests.length,2);
  assert.equal(sourceSnapshot.disbursementRequests[0].sourceLines[0].total,425);
  const ui=fs.readFileSync(path.join(root,'components/DisbursementWorkspace.tsx'),'utf8'),paper=fs.readFileSync(path.join(root,'lib/disbursement-paper.ts'),'utf8'),home=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
- assert(ui.includes('createGeneratedDisbursement')&&ui.includes('makeGeneratedSnapshot')&&!ui.includes('Requested Amount (PHP)<input'),'No manual amount entry');
- assert(ui.includes('Source / Branches')&&ui.includes('Total per Branch'));assert(ui.includes('Download Paper + Receipts PDF'));
+ assert(ui.includes('createAutomaticDisbursement')&&ui.includes('makeGeneratedSnapshot')&&!ui.includes('Requested Amount (PHP)<input'),'No manual amount entry');
+ assert(ui.includes('Total per Branch')&&ui.includes('Automatic coverage'));assert(ui.includes('Download Paper + Receipts PDF'));
  assert(paper.includes('size:A4 portrait')&&paper.includes('doc.copyPages')&&paper.includes('embedPng'));
  assert(paper.includes('ONLINE CHARGE')&&paper.includes('TOTAL EXPENSES')&&paper.includes('FUND SUMMARY - TOTAL PER BRANCH'),'Downloaded PDF preserves all five approval-paper columns and per-branch summary');
- assert(ui.includes("active.sourceMode==='generated'&&creator"),'Old manual request records are read-only in the revised UI');
+ assert(ui.includes("active.sourceMode==='generated'&&creator"),'Only generated drafts may be revised');
  assert(home.includes('Other Reports &amp; Bulk Exports')&&home.includes('selectedReportFund'));
  assert(home.includes("entry.fund!=='RF'"));
  assert(home.includes("value={eForm.onlineCharge}")&&home.includes("value={partForm.onlineCharge}"));

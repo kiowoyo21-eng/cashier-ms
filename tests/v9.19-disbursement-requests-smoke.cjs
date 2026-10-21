@@ -55,7 +55,7 @@ try{
  const ui=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');const component=fs.readFileSync(path.join(root,'components/DisbursementWorkspace.tsx'),'utf8');
  assert(ui.includes("view==='disbursements'")&&ui.includes("Prepare / Track Disbursement"));
  assert(!/Simulate Accounting|Simulate Ms Kate|Approve External/.test(component),'No external impersonation controls');
- assert(component.includes('Pending Accounting')&&component.includes('Approval Routing'));
+ assert(component.includes('Pending Accounting')&&component.includes('Approval tracking'));
  let ts;try{ts=require('typescript')}catch{ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript')}
  for(const file of ['app/page.tsx','components/DisbursementWorkspace.tsx']){
   const source=fs.readFileSync(path.join(root,file),'utf8');const parsed=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
