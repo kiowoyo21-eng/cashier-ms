@@ -98,29 +98,13 @@ export function setupFirstAdmin(db:Database,details:{name:string;username:string
  return log({...db,users:[account]},account.id,'Initial administrator created',`Admin setup for ${username} · ${BRANCH_NAME(details.branch)}`);
 }
 
-/** Remove legacy *untouched* default login accounts only when there are no
- * business records or user-created accounts. Never strand a business with no
- * administrator: populated browsers must migrate accounts deliberately. */
-export function removeEmptyDemoAccounts(db:Database,hasSavedOfficeFiles=false):Database {
- const known:[string,string,string,string,Role,BranchId][]=[
-  ['u-admin','admin','admin12345','System Administrator','admin','UCM'],
-  ['u-cashier','cashier','cashier12345','Cashier — Mandaluyong','cashier','UCM'],
-  ['u-pb','pbacc','pb12345','Parts Buyer — Mandaluyong','pb','UCM']
- ];
- const isOriginal=(u:User)=>known.some(([id,username,password,name,role,branch])=>u.id===id&&u.username===username&&u.password===password&&u.name===name&&u.role===role&&u.branch===branch&&u.active);
- // Retain even original-looking credentials where transactions, audit, documents
- // or other work may belong to the account (the user can deactivate it later).
- const housekeepingActions=new Set(['Demo inventory cleanup','Legacy demo fixture cleanup']);
- const genuineAudit=db.audit.filter(a=>!(a.by==='system'&&housekeepingActions.has(a.action))&&!(a.action==='Login'&&known.some(([id])=>id===a.by)));
- const hasBusinessData=[db.pos,db.fundEntries,db.inventory,db.stockMovements,db.stockRequests,db.stockReceipts,db.stockIssues||[],db.terminalEvents||[],db.terminalSettlements||[],db.counts,db.incidents,db.turnovers,db.requests,genuineAudit,db.deletedPOSDrafts||[]].some(arr=>arr.length>0);
- const amountsAllZero=BRANCHES.every(b=>!db.settings.rfBase[b.id]&&!db.settings.rfpBase[b.id]);
- const amountsMatchLegacy=BRANCHES.every(b=>db.settings.rfBase[b.id]===50000&&db.settings.rfpBase[b.id]===120000);
- const customSettings=!!db.settings.reportLogo||!!db.settings.signatories?.checked||!!db.settings.signatories?.approved||db.settings.categories.some(c=>!RF_CATEGORIES.some(standard=>standard===c));
- if(hasBusinessData||hasSavedOfficeFiles||customSettings||(!amountsAllZero&&!amountsMatchLegacy)||db.users.some(u=>!isOriginal(u)))return db;
- const zero=():Record<BranchId,number>=>({UCQC:0,UCM:0,UCLP:0,MMM:0});
- // An untouched seed-only browser goes through first-time admin setup instead of
- // being left with public default passwords or fictional cash balances.
- return {...db,users:[],audit:genuineAudit,settings:amountsMatchLegacy?{...db.settings,rfBase:zero(),rfpBase:zero()}:db.settings};
+/** Upgrades must never silently delete existing login accounts.
+ * Even accounts originally used for demonstrations may be the only way to access
+ * work stored in this browser. New installations remain account-free via createSeed().
+ * Administrators can explicitly deactivate accounts once a replacement exists.
+ */
+export function removeEmptyDemoAccounts(db:Database,_hasSavedOfficeFiles=false):Database {
+ return db;
 }
 
 /** Remove ONLY the recognizable untouched v9.0-v9.8 sample records when loading
