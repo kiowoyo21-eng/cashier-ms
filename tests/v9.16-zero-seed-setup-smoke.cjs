@@ -24,12 +24,12 @@ try {
  ];
  const old={...fresh,users:oldUsers,settings:{...fresh.settings,rfBase:{UCQC:50000,UCM:50000,UCLP:50000,MMM:50000},rfpBase:{UCQC:120000,UCM:120000,UCLP:120000,MMM:120000}}};
  const cleared=d.removeEmptyDemoAccounts(old);
- assert.equal(cleared.users.length,0,'Clean old browser must lose default passwords');
- assert.equal(cleared.settings.rfBase.UCM,0,'Seed RF removed');
- assert.equal(cleared.settings.rfpBase.UCM,0,'Seed RFP removed');
+ assert.equal(cleared.users.length,3,'Existing browser users must not be automatically deleted');
+ assert.equal(cleared.settings.rfBase.UCM,50000,'Existing balances are not reset during account migration');
+ assert.equal(cleared.settings.rfpBase.UCM,120000,'Existing balances are not reset during account migration');
  const loggedIn=d.removeEmptyDemoAccounts({...old,users:oldUsers.map(u=>({...u,lastLoginDate:'2026-10-20'})),audit:[{id:'login1',by:'u-admin',at:'2026-10-20',action:'Login',detail:'admin'}]});
- assert.equal(loggedIn.users.length,0,'Legacy login activity alone is not genuine business data');
- assert.equal(loggedIn.audit.length,0);
+ assert.equal(loggedIn.users.length,3,'Previously used accounts are preserved');
+ assert.equal(loggedIn.audit.length,1,'Account migration must not erase history');
  assert.equal(d.removeEmptyDemoAccounts(old,true).users.length,3,'Docs/Sheets ownership must not be orphaned');
  const withReal={...old,pos:[{id:'real-order'}]};assert.equal(d.removeEmptyDemoAccounts(withReal).users.length,3,'Preserve users with real transactions');
  const withNewUser={...old,users:[...oldUsers,{...oldUsers[0],id:'new-admin',username:'owner',password:'own-password'}]};assert.equal(d.removeEmptyDemoAccounts(withNewUser).users.length,4);
@@ -37,5 +37,6 @@ try {
  const ui=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
  assert(ui.includes('Create the Administrator')&&ui.includes('completeInitialSetup')&&ui.includes('setupFirstAdmin'));
  assert(!ui.includes('Demo accounts — click to fill'),'No prefilled public demo credentials on login');
- console.log('PASS v9.16: zero business and user seeds, admin first-run setup, legacy demo cleanup, preservation of genuine records and office file ownership.');
+ assert(ui.includes('restoreBackupBeforeSetup')&&ui.includes('Restore existing backup (JSON)'),'Restore backup must be available before login');
+ console.log('PASS v9.16: zero business and user seeds, admin first-run setup, preservation of all existing user accounts and genuine records and office file ownership.');
 } finally {fs.rmSync(dir,{recursive:true,force:true});}

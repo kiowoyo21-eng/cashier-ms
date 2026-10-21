@@ -1,11 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.posCOGS = exports.configurePendingProductPrices = exports.needsPriceConfiguration = exports.needsCostConfiguration = exports.paidTotal = exports.posTotal = exports.STORAGE_KEY = exports.number = exports.money = exports.pesos = exports.uid = exports.BRANCH_NAME = exports.timeMinutesPH = exports.monthRange = exports.vehicleName = exports.CAR_CATALOG = exports.RF_CATEGORIES = exports.BRANCHES = void 0;
+exports.posCOGS = exports.configurePendingProductPrices = exports.needsPriceConfiguration = exports.needsCostConfiguration = exports.paidTotal = exports.posTotal = exports.posLineTotal = exports.STORAGE_KEY = exports.number = exports.money = exports.pesos = exports.uid = exports.BRANCH_NAME = exports.timeMinutesPH = exports.monthRange = exports.vehicleName = exports.CAR_CATALOG = exports.RF_CATEGORIES = exports.BRANCHES = void 0;
 exports.pendingRFPDisbursementRows = pendingRFPDisbursementRows;
 exports.todayPH = todayPH;
 exports.hourPH = hourPH;
 exports.datePH = datePH;
 exports.createSeed = createSeed;
+exports.setupFirstAdmin = setupFirstAdmin;
+exports.removeEmptyDemoAccounts = removeEmptyDemoAccounts;
 exports.removeLegacySeedFixtures = removeLegacySeedFixtures;
 exports.removeUntouchedDemoProducts = removeUntouchedDemoProducts;
 exports.loadDB = loadDB;
@@ -95,16 +97,35 @@ const money = (n) => new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, 
 exports.money = money;
 const number = (v) => Math.max(0, Number(v) || 0);
 exports.number = number;
-/** Empty business database for fresh installations. Demo login identities are retained
- * only to allow frontend-only role previews; real authentication needs a backend. */
+/** A clean browser starts without demo transactions, inventory, balances or accounts.
+ * The first administrator creates an account through the one-time setup screen. */
 function createSeed() {
-    const users = [
-        { id: 'u-admin', username: 'admin', password: 'admin12345', name: 'System Administrator', role: 'admin', branch: 'UCM', active: true },
-        { id: 'u-cashier', username: 'cashier', password: 'cashier12345', name: 'Cashier — Mandaluyong', role: 'cashier', branch: 'UCM', active: true },
-        { id: 'u-pb', username: 'pbacc', password: 'pb12345', name: 'Parts Buyer — Mandaluyong', role: 'pb', branch: 'UCM', active: true }
-    ];
     const empty = () => ({ UCQC: 0, UCM: 0, UCLP: 0, MMM: 0 });
-    return { users, fundEntries: [], pos: [], inventory: [], stockMovements: [], stockRequests: [], stockReceipts: [], stockIssues: [], terminalEvents: [], terminalSettlements: [], counts: [], incidents: [], turnovers: [], requests: [], audit: [], settings: { rfBase: empty(), rfpBase: empty(), categories: [...exports.RF_CATEGORIES], signatories: { checked: '', approved: '' } } };
+    return { users: [], fundEntries: [], pos: [], deletedPOSDrafts: [], inventory: [], stockMovements: [], stockRequests: [], stockReceipts: [], stockIssues: [], terminalEvents: [], terminalSettlements: [], counts: [], incidents: [], turnovers: [], requests: [], audit: [], settings: { rfBase: empty(), rfpBase: empty(), categories: [...exports.RF_CATEGORIES], signatories: { checked: '', approved: '' } } };
+}
+/** Frontend-only first-run bootstrap. No preconfigured passwords or seed accounts. */
+function setupFirstAdmin(db, details) {
+    if (db.users.length)
+        throw new Error('Initial admin setup is only available when no user accounts exist.');
+    const name = details.name.trim(), username = details.username.trim().toLowerCase();
+    if (name.length < 2)
+        throw new Error('Enter the administrator full name.');
+    if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username))
+        throw new Error('Username must contain 3–32 letters, numbers, dots, underscores or hyphens.');
+    if (details.password.length < 10)
+        throw new Error('Use a password with at least 10 characters.');
+    if (!exports.BRANCHES.some(b => b.id === details.branch))
+        throw new Error('Select a valid administrator branch.');
+    const account = { id: (0, exports.uid)(), name, username, password: details.password, role: 'admin', branch: details.branch, active: true };
+    return log({ ...db, users: [account] }, account.id, 'Initial administrator created', `Admin setup for ${username} · ${(0, exports.BRANCH_NAME)(details.branch)}`);
+}
+/** Upgrades must never silently delete existing login accounts.
+ * Even accounts originally used for demonstrations may be the only way to access
+ * work stored in this browser. New installations remain account-free via createSeed().
+ * Administrators can explicitly deactivate accounts once a replacement exists.
+ */
+function removeEmptyDemoAccounts(db, _hasSavedOfficeFiles = false) {
+    return db;
 }
 /** Remove ONLY the recognizable untouched v9.0-v9.8 sample records when loading
  * an existing browser database. Never reset genuine business data or identifiers.
@@ -185,9 +206,19 @@ function loadDB() { if (typeof window === 'undefined')
             d.stockRequests = d.stockRequests || [];
             d.stockReceipts = d.stockReceipts || [];
             d.stockIssues = d.stockIssues || [];
+            d.deletedPOSDrafts = d.deletedPOSDrafts || [];
             d.terminalEvents = d.terminalEvents || [];
             d.terminalSettlements = d.terminalSettlements || [];
-            return removeLegacySeedFixtures(removeUntouchedDemoProducts(d));
+            const cleaned = removeLegacySeedFixtures(removeUntouchedDemoProducts(d));
+            const officeRaw = localStorage.getItem('uc_report_studio_v1');
+            let hasFiles = false;
+            try {
+                hasFiles = Array.isArray(JSON.parse(officeRaw || '[]')) && JSON.parse(officeRaw || '[]').length > 0;
+            }
+            catch {
+                hasFiles = !!officeRaw;
+            }
+            return removeEmptyDemoAccounts(cleaned, hasFiles);
         }
     }
 }
@@ -222,12 +253,14 @@ function branchFundTotals(db, fund) {
 }
 function nextNumber(db, branch, type) {
     const prefix = type === 'RF' ? `${branch}-Rotating Fund-` : `${branch}-${type}-`;
-    const all = type === 'POS' ? db.pos.map(v => v.no) : db.fundEntries.filter(v => v.fund === type).map(v => v.no);
+    const all = type === 'POS' ? [...db.pos.map(v => v.no), ...(db.deletedPOSDrafts || []).map(v => v.no)] : db.fundEntries.filter(v => v.fund === type).map(v => v.no);
     const max = Math.max(0, ...all.filter(v => v.startsWith(prefix)).map(v => Number(v.slice(prefix.length)) || 0));
     return `${prefix}${String(max + 1).padStart(8, '0')}`;
 }
 function log(db, by, action, detail) { return { ...db, audit: [{ id: (0, exports.uid)(), at: new Date().toISOString(), by, action, detail }, ...db.audit].slice(0, 1000) }; }
-const posTotal = (p) => p.items.reduce((v, i) => v + i.qty * i.price, 0);
+const posLineTotal = (i) => i.lineTotal ?? Math.round(i.qty * i.price * 100) / 100;
+exports.posLineTotal = posLineTotal;
+const posTotal = (p) => Math.round(p.items.reduce((v, i) => v + (0, exports.posLineTotal)(i), 0) * 100) / 100;
 exports.posTotal = posTotal;
 const paidTotal = (p) => p.payments.reduce((v, i) => v + i.amount, 0);
 exports.paidTotal = paidTotal;
@@ -520,6 +553,8 @@ function requestStockIssue(db, posId, lines, reason, by) {
     const actor = db.users.find(u => u.id === by && u.active), pos = db.pos.find(p => p.id === posId);
     if (!actor || actor.role !== 'cashier' || !pos || pos.branch !== actor.branch || pos.status !== 'Pending')
         throw new Error('Stock release requires your branch Cashier and an existing open POS.');
+    if (pos.quotationPhase === 'Initial')
+        throw new Error('Finish Final Quotation and COGS Review before requesting stock release on a downpayment POS.');
     if (!pos.plate.trim() || !pos.client.trim())
         throw new Error('Complete the POS plate number and customer before requesting stock release.');
     if (!reason.trim() || reason.trim().length < 12)
@@ -744,7 +779,7 @@ function plateSuggestions(db, branch, term) {
 /** Links only unassigned PB part-lines to a new Cashier POS (not to unrelated previous visits). */
 function linkPartsOnSale(db, pos) {
     // Do not silently assign parts to a new visit if another open POS exists for the same plate.
-    if (db.pos.some(p => p.id !== pos.id && p.branch === pos.branch && p.status === 'Pending' && normalizePlate(p.plate) === normalizePlate(pos.plate)))
+    if (db.pos.some(p => p.id !== pos.id && p.status === 'Pending' && normalizePlate(p.plate) === normalizePlate(pos.plate)))
         return db;
     const items = db.fundEntries.filter(e => e.fund === 'RFP' && e.kind === 'expense' && e.status !== 'Rejected' && !e.linkedPosId && e.branch === pos.branch && normalizePlate(e.plate || '') === normalizePlate(pos.plate));
     if (!items.length)
@@ -762,9 +797,13 @@ function assignConsumedStockToPOS(db, branch, rawPlate, lines, by, posId) {
     let target = posId ? db.pos.find(p => p.id === posId) : undefined;
     if (posId && (!target || target.branch !== branch || target.status !== 'Pending' || normalizePlate(target.plate) !== plate))
         throw new Error('Selected POS is not a valid open visit for this plate and branch.');
+    if (db.pos.some(p => p.status === 'Pending' && p.branch !== branch && normalizePlate(p.plate) === plate))
+        throw new Error(`Unit ${plate} is still open in another branch. Close that transaction first.`);
     let next = db, created = false;
     if (!target) {
-        const open = db.pos.filter(p => p.branch === branch && p.status === 'Pending' && normalizePlate(p.plate) === plate);
+        const open = db.pos.filter(p => p.status === 'Pending' && normalizePlate(p.plate) === plate);
+        if (open.some(p => p.branch !== branch))
+            throw new Error(`Unit ${plate} already has an open POS at another branch. Close it before transferring the vehicle.`);
         if (open.length > 1)
             throw new Error('Multiple POS Drafts found. Choose the correct visit.');
         target = open[0];

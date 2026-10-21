@@ -252,7 +252,7 @@ function printSales(db, branch, from = '', to = '') {
 }
 function printPOS(db, p) {
     const title = 'POS QUOTATION / TRANSACTION', branch = (0, data_1.BRANCH_NAME)(p.branch);
-    const lines = p.items.map((e, i) => `<tr>${cell(i + 1)}${cell(e.type)}${cell(e.name)}${cell(e.qty)}${cell(fmt(e.price), true)}${cell(fmt(e.qty * e.price), true)}${cell(e.supplier || '—')}${cell(e.receiptNo || '—')}</tr>`).join('');
+    const lines = p.items.map((e, i) => `<tr>${cell(i + 1)}${cell(e.type)}${cell(e.name)}${cell(e.qty)}${cell(fmt(e.price), true)}${cell(fmt((0, data_1.posLineTotal)(e)), true)}${cell(e.supplier || '—')}${cell(e.receiptNo || '—')}</tr>`).join('');
     const payments = p.payments.map(x => `<tr>${cell(x.date)}${cell(x.mode)}${cell(fmt(x.amount), true)}</tr>`).join('');
     const costRows = (0, data_1.posCostBreakdown)(p, db);
     const categories = [['From Inventory', costRows.filter(x => x.source.startsWith('From Inventory'))], ['PB / RFP Purchases', costRows.filter(x => x.source.startsWith('PB / RFP'))], ['Other / Manual POS Costs', costRows.filter(x => x.source === 'POS / Manual COGS')]];
