@@ -48,11 +48,11 @@ const clock=()=>new Date().toISOString();
 const requests=(db:Database):DisbursementRequest[]=>db.disbursementRequests||[];
 export function isDisbursementCreator(u?:User):u is User & {role:DisbursementRequestorRole} {return !!u?.active&&(u.role==='cashier'||u.role==='pb');}
 function requireOwner(request:DisbursementRequest,u:User){
- if(!isDisbursementCreator(u)||request.requestorId!==u.id||request.branch!==u.branch)throw new Error('Only the assigned active requester can change this branch request.');
+ if(!isDisbursementCreator(u)||request.requestorId!==u.id||(u.role==='cashier'&&request.branch!==u.branch))throw new Error('Only the assigned active requester may change this request in an authorized branch.');
 }
 function validateFields(fields:DisbursementDraftFields,u:User){
  if(!isDisbursementCreator(u))throw new Error('Only Cashier or Parts Buyer may create a disbursement request.');
- if(!BRANCHES.some(b=>b.id===fields.branch)||fields.branch!==u.branch)throw new Error('Select your assigned branch.');
+ if(!BRANCHES.some(b=>b.id===fields.branch)||(u.role==='cashier'&&fields.branch!==u.branch))throw new Error('Select your assigned branch (or a valid PB branch).');
  if(!/^\d{4}-\d{2}-\d{2}$/.test(fields.requestDate)||Number.isNaN(Date.parse(fields.requestDate)))throw new Error('Enter a valid request date.');
  if(!fields.category.trim())throw new Error('Select a disbursement category.');
  if(fields.purpose.trim().length<5)throw new Error('Purpose must have at least five characters.');
@@ -83,6 +83,8 @@ export function editDisbursementDraft(db:Database,id:string,u:User,fields:Disbur
  const r=requests(db).find(x=>x.id===id);if(!r)throw new Error('Request not found.');requireOwner(r,u);
  if(!['Draft','Returned by Accounting','Returned by Ms Kate'].includes(r.status))throw new Error('Submitted, approved, rejected or released requests cannot be edited.');
  validateFields(fields,u);
+ // Existing request branch is immutable; changing branches requires a new request.
+ if(fields.branch!==r.branch)throw new Error('Request branch cannot be changed after creation. Create a new draft for another branch.');
  const changes:NonNullable<DisbursementTimeline['changes']>={};
  for(const key of ['requestDate','category','purpose','amount','remarks'] as const){const before=r[key],after=(typeof fields[key]==='string'?fields[key].trim():fields[key]);if(before!==after)changes[key]={before,after};}
  if(r.attachments.length!==fields.attachments.length||r.attachments.some((a,i)=>a.name!==fields.attachments[i]?.name||a.data!==fields.attachments[i]?.data))changes.attachments={before:r.attachments.map(x=>x.name),after:fields.attachments.map(x=>x.name)};
@@ -119,5 +121,5 @@ export function externallyConsistent(r:DisbursementRequest):boolean{
  return true;
 }
 export function visibleDisbursements(db:Database,u:User,adminBranch:BranchId|'ALL'='ALL'){
- return requests(db).filter(r=>u.role==='admin'?(adminBranch==='ALL'||r.branch===adminBranch):(r.requestorId===u.id&&r.branch===u.branch));
+ return requests(db).filter(r=>u.role==='admin'?(adminBranch==='ALL'||r.branch===adminBranch):(r.requestorId===u.id&&(u.role==='pb'||r.branch===u.branch)));
 }

@@ -22,8 +22,8 @@ try{
  const ui=fs.readFileSync(path.join(root,'app/page.tsx'),'utf8');
  assert.match(ui,/Brand &amp; Model \(optional\)/);
  assert.match(ui,/Year \(optional\)/);
- assert.match(ui,/Branch \(assigned account\)/);
- assert(ui.includes('options={branchOptions.filter(b=>b.value===user?.branch)}'));
+ assert.match(ui,/Purchase Branch \(RFP charged to this branch\)/);
+ assert(ui.includes('options={branchOptions} required/>')); // PB can select every configured branch (v9.20)
  assert(ui.includes('branch:purchaseBranch'));
  assert(ui.includes("matchingPOS(db,purchaseBranch,plate)"));
  assert(ui.includes('clearAllAppLocalStorage')&&ui.includes('CLEAR ALL')&&ui.includes('Clear App Local Storage'));
@@ -32,5 +32,5 @@ try{
  let ts;try{ts=require('typescript')}catch{ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript')}
  const parsed=ts.createSourceFile('app/page.tsx',ui,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(parsed.parseDiagnostics.length,0,parsed.parseDiagnostics.map(x=>x.messageText).join('\n'));
- console.log('PASS v9.17: optional vehicle details, assigned-branch safeguard, plate/COGS linking, clearing only app storage and restoring complete backup, TSX syntax');
+ console.log('PASS v9.17/v9.20: optional vehicle details, PB branch selection, plate/COGS linking, safe local storage backup/reset, TSX syntax');
 } finally {fs.rmSync(out,{recursive:true,force:true});}
