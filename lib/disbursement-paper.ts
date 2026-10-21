@@ -130,15 +130,15 @@ export async function downloadDisbursementPDF(r:DisbursementRequest):Promise<voi
    if(mimetype==='application/pdf'){const original=await PDFDocument.load(bytes);const copied=await doc.copyPages(original,original.getPageIndices());copied.forEach(pg=>doc.addPage(pg));}
    else if(mimetype==='image/png'||mimetype==='image/jpeg'||mimetype==='image/jpg'){
     const im=mimetype==='image/png'?await doc.embedPng(bytes):await doc.embedJpg(bytes);
-    const pg=doc.addPage([W,H]);pg.drawText(normalize(`Receipt ${idx}: ${receipt.name}`).slice(0,85),{x:left,y:H-28,font:bold,size:10});
-    const scale=Math.min((W-2*left)/im.width,(H-95)/im.height);pg.drawImage(im,{x:(W-im.width*scale)/2,y:35,width:im.width*scale,height:im.height*scale});
+    const pg=doc.addPage([W,H]);pg.drawText(safe(`Receipt ${idx}: ${receipt.name}`).slice(0,85),{x:margin,y:H-28,font:bold,size:10});
+    const scale=Math.min((W-2*margin)/im.width,(H-95)/im.height);pg.drawImage(im,{x:(W-im.width*scale)/2,y:35,width:im.width*scale,height:im.height*scale});
    }else if(mimetype==='image/webp'){
     const dataURL=await new Promise<string>((resolve,reject)=>{const source=new Image();source.onload=()=>{const canvas=document.createElement('canvas');canvas.width=source.width;canvas.height=source.height;const ctx=canvas.getContext('2d');if(!ctx)return reject(new Error('Canvas unavailable'));ctx.drawImage(source,0,0);resolve(canvas.toDataURL('image/png'));};source.onerror=()=>reject(new Error('Receipt image unavailable'));source.src=receipt.data;});
-    const png=Uint8Array.from(atob(dataURL.split(',')[1]),c=>c.charCodeAt(0));const im=await doc.embedPng(png);const pg=doc.addPage([W,H]);pg.drawText(normalize(`Receipt ${idx}: ${receipt.name}`).slice(0,85),{x:left,y:H-28,font:bold,size:10});const scale=Math.min((W-2*left)/im.width,(H-95)/im.height);pg.drawImage(im,{x:(W-im.width*scale)/2,y:35,width:im.width*scale,height:im.height*scale});
+    const png=Uint8Array.from(atob(dataURL.split(',')[1]),c=>c.charCodeAt(0));const im=await doc.embedPng(png);const pg=doc.addPage([W,H]);pg.drawText(safe(`Receipt ${idx}: ${receipt.name}`).slice(0,85),{x:margin,y:H-28,font:bold,size:10});const scale=Math.min((W-2*margin)/im.width,(H-95)/im.height);pg.drawImage(im,{x:(W-im.width*scale)/2,y:35,width:im.width*scale,height:im.height*scale});
    }else{
-    const pg=doc.addPage([W,H]);pg.drawText(normalize(`Receipt ${idx}: ${receipt.name} (unsupported type; download original separately)`),{x:left,y:H-35,font,size:9});
+    const pg=doc.addPage([W,H]);pg.drawText(safe(`Receipt ${idx}: ${receipt.name} (unsupported type; download original separately)`),{x:margin,y:H-35,font,size:9});
    }
-  }catch{const pg=doc.addPage([W,H]);pg.drawText(normalize(`Receipt ${idx}: ${receipt.name} could not be embedded. Download original from CMS.`),{x:left,y:H-35,font,size:9});}
+  }catch{const pg=doc.addPage([W,H]);pg.drawText(safe(`Receipt ${idx}: ${receipt.name} could not be embedded. Download original from CMS.`),{x:margin,y:H-35,font,size:9});}
  }
  const blob=new Blob([new Uint8Array(await doc.save())],{type:'application/pdf'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');
  anchor.href=url;anchor.download=`${r.requestNo.replace(/[^a-zA-Z0-9_-]/g,'_')}-with-receipts.pdf`;document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),30_000);

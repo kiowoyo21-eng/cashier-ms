@@ -1,6 +1,6 @@
 {
   "name": "underchargers-fund-management-pwa",
-  "version": "9.21.0",
+  "version": "9.21.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
