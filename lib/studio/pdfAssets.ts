@@ -1,0 +1,7 @@
+const DATABASE="uc-hr-document-studio-assets";
+const STORE="pdf-blobs";
+function openDb():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{if(!indexedDB)reject(Error("Browser does not support IndexedDB"));const req=indexedDB.open(DATABASE,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE)};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+export async function putPdf(id:string,bytes:ArrayBuffer){const db=await openDb();try{await new Promise<void>((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(bytes,id);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}finally{db.close()}}
+export async function getPdf(id:string):Promise<ArrayBuffer|null>{const db=await openDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly");const req=tx.objectStore(STORE).get(id);req.onsuccess=()=>resolve(req.result??null);req.onerror=()=>reject(req.error)})}finally{db.close()}}
+export async function deletePdf(id:string){const db=await openDb();try{await new Promise<void>((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).delete(id);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}finally{db.close()}}
+export function saveBlob(blob:Blob,name:string){const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)}
