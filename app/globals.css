@@ -616,3 +616,229 @@
 @media(max-width:950px){.disb-paper-stage{padding:15px}.disb-paper-body{padding:18px 21px}.disb-paper-head{padding:26px 20px 18px}.disb-review-controls,.disb-review-actionbar{align-items:stretch;flex-direction:column}.disb-request-row{grid-template-columns:minmax(0,1fr) 100px 140px 18px;gap:9px}}
 @media(max-width:670px){.disb-hub-head,.disb-review-toolbar{align-items:stretch;flex-direction:column}.disb-hub-head .button{align-self:flex-start}.disb-hub-strip span{padding:10px 11px;flex:1 1 50%;border-bottom:1px solid var(--disb-line)}.disb-hub-strip strong{font-size:15px}.disb-request-row{grid-template-columns:minmax(0,1fr) auto 16px}.disb-request-row .disb-badge{grid-column:1/3;grid-row:2;justify-self:start}.disb-request-row>svg{grid-column:3;grid-row:1}.disb-list-heading{align-items:start;flex-direction:column}.disb-paper-stage{padding:6px;border-radius:8px}.disb-paper-meta{grid-template-columns:1fr 1fr}.disb-paper-head{padding:21px 14px 14px}.disb-paper-head h2{font-size:14px}.disb-paper-body{padding:14px 12px 20px}.disb-paper-table{min-width:570px}.disb-paper-summary-grid{grid-template-columns:1fr;gap:0}.disb-paper-section h3{font-size:11px}.disb-signatures{gap:22px 12px}.disb-review-top{align-items:start;gap:8px}.disb-review-status{flex-wrap:wrap;justify-content:flex-end}.disb-review-amount{align-items:flex-start;min-width:auto}.disb-review-amount strong{font-size:24px}.disb-review-buttons{justify-content:stretch}.disb-review-buttons .button{flex:1 1 150px}.disb-coverage-box{padding:12px}.disb-list-filters{margin:0 12px 12px}}
 @media print{.disb-v922 .disb-review-top,.disb-v922 .disb-review-toolbar,.disb-v922 .disb-review-actionbar,.disb-v922 .disb-review-controls,.disb-v922 .disb-history-fold,.disb-v922 .disb-coverage-box,.disb-v922 .disb-receipt-panel,.disb-v922 .disb-footer-notice{display:none!important}.disb-paper-stage{background:white!important;padding:0!important;border:0!important}.disb-paper{box-shadow:none!important;border:0!important;max-width:100%!important}.disb-paper-table{min-width:0!important}.disb-paper-table thead{display:table-header-group}.disb-paper-table tr{break-inside:avoid}.disb-receipt-action{display:none!important}.disb-paper-summary-grid,.disb-paper-approvals{break-inside:avoid}@page{size:A4 portrait;margin:10mm}}
+
+/* v9.23 — Universal UI spacing and overflow cleanup.
+   Screen-only density changes: preserve transaction/approval logic and print paper layout. */
+:root {
+  --cms-page-gutter: clamp(20px, 2.6vw, 42px);
+  --cms-panel-gutter: clamp(16px, 1.7vw, 24px);
+  --cms-card-gap: clamp(13px, 1.4vw, 20px);
+}
+
+/* Establish safe content boundaries inside every workspace and grid. */
+.workspace, .main-content, .main-content > *, .panel,
+.dashboard-grid > *, .stats-grid > *, .settings-grid > *,
+.cash-grid > *, .approval-metrics > * {min-width:0}
+.main-content {
+  max-width:1660px;
+  padding:30px var(--cms-page-gutter) 72px;
+}
+.main-content > .panel, .main-content > section.panel,
+.main-content > .dashboard-grid, .main-content > .cash-grid,
+.main-content > .stats-grid, .main-content > .settings-grid {margin-bottom:var(--cms-card-gap)}
+.page-heading {gap:18px;flex-wrap:wrap;margin-bottom:23px}
+.page-heading > * {min-width:0}
+.page-heading .heading-extra {display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+
+/* Panel headings must not collide with actions or truncate descriptions. */
+.panel-head {padding:18px var(--cms-panel-gutter);gap:12px 16px;min-width:0}
+.panel-head > div:first-child {min-width:0}
+.panel-head h3, .panel-head span, .panel-head p {overflow-wrap:anywhere}
+.panel-action-head {flex-wrap:wrap}
+.panel-action-head > div:first-child {flex:1 1 210px}
+.panel-buttons {min-width:0;gap:8px}
+.panel-buttons .button {max-width:100%}
+.panel > .panel-hint {padding:12px var(--cms-panel-gutter) 17px}
+.panel > .filters, .panel > .report-filters {
+  padding:15px var(--cms-panel-gutter);
+  gap:10px;
+}
+.panel > .tabs-inside {
+  margin:0 var(--cms-panel-gutter) 6px;
+  max-width:calc(100% - 2 * var(--cms-panel-gutter));
+}
+.panel > .form-grid, .panel > .stack-fields {
+  margin:16px var(--cms-panel-gutter) 20px;
+}
+.panel > .inline-entry, .panel > .replenishment-preview,
+.panel > .auto-id, .panel > .blocking-banner {
+  margin-left:var(--cms-panel-gutter);
+  margin-right:var(--cms-panel-gutter);
+}
+.panel > p:not(.panel-hint) {
+  padding:12px var(--cms-panel-gutter);
+  margin:0;
+  line-height:1.6;
+  overflow-wrap:anywhere;
+}
+
+/* Data tables scroll inside their own bordered surfaces, never through the page. */
+.table-wrap {min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;padding:8px 12px 14px}
+.table-wrap > .data-table {min-width:100%}
+.data-table th, .data-table td {padding:12px 13px;vertical-align:middle}
+.data-table td {white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+.data-table td.num, .data-table th.num {white-space:nowrap;font-variant-numeric:tabular-nums}
+.data-table .table-sub {max-width:340px}
+.tabs {scroll-padding-inline:12px}
+.tabs-inside {max-width:100%}
+.filters > *, .report-filters > * {min-width:0}
+.search-box {min-width:min(180px,100%)}
+.filter-select {min-width:0}
+
+/* Reports: detail text/actions were touching the panel edge. */
+.report-selected-detail > p:not(.panel-hint) {
+  margin:15px var(--cms-panel-gutter) 0;
+  padding:12px 14px;
+  border:1px solid #e9edf1;
+  border-radius:9px;
+  background:#f8fafc;
+}
+.report-selected-detail > .report-detail-actions {
+  margin:14px var(--cms-panel-gutter) 20px;
+  gap:9px;
+}
+.report-selected-detail > .disb-files {
+  padding:0 var(--cms-panel-gutter) 20px;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+.report-bulk-menu {margin:15px var(--cms-panel-gutter);padding:14px 16px}
+.report-detail-actions > .button {white-space:normal;text-align:center;min-width:0}
+.report-template-picker {padding:15px var(--cms-panel-gutter)}
+.settings-grid > .panel, .dashboard-grid > .panel {min-width:0}
+.settings-grid .panel > .field, .settings-grid .panel > .button,
+.settings-grid .panel > .stack-fields {margin-left:var(--cms-panel-gutter);margin-right:var(--cms-panel-gutter)}
+.settings-actions, .about-list {padding-left:var(--cms-panel-gutter);padding-right:var(--cms-panel-gutter)}
+
+/* POS and replenishment: give receipt/quotation rows and totals room to breathe. */
+.receipt-paper {padding:17px 19px}
+.receipt-inline-editor {padding:16px 18px;min-width:0}
+.receipt-inline-block {padding:13px 6px 12px}
+.receipt-add-row {margin:12px 0 19px 3px}
+.receipt-head, .receipt-inline-row {min-width:0}
+.receipt-inline-row > * {min-width:0}
+.cogs-review-paper {min-width:0}
+.cogs-review-row {padding:16px;gap:12px}
+.pos-stepper {gap:8px}
+.pos-stepper > div {line-height:1.35}
+.payment-row {gap:12px;min-width:0}
+.payment-row > * {min-width:0;overflow-wrap:anywhere}
+
+/* Make dialog content and action bars accessible without edge clipping. */
+.modal-overlay {padding:clamp(12px,2.2vw,26px)}
+.modal {max-width:calc(100vw - 24px);min-width:0}
+.modal-header {padding:20px clamp(17px,2.1vw,27px)}
+.modal-header > * {min-width:0}
+.modal-header h2, .detail-top h2 {overflow-wrap:anywhere}
+.modal-body {padding:19px clamp(17px,2.1vw,27px) 25px;min-width:0}
+.modal-body > :first-child {margin-top:0}
+.modal-actions {gap:9px}
+.modal-actions .button {max-width:100%;white-space:normal}
+.detail-top, .auto-id, .payment-row, .detail-buttons {flex-wrap:wrap}
+.detail-grid > * {min-width:0}
+.upload-box, .signature-wrap {min-width:0}
+
+/* Disbursement is a document-first page: preserve a readable inset on every edge. */
+.disb-v922 {width:100%;max-width:1220px;padding:0 0 30px;min-width:0}
+.disb-hub-head {padding:12px 6px 14px;gap:20px}
+.disb-hub-head > div, .disb-review-toolbar > div {min-width:0}
+.disb-hub-strip {margin:0 0 3px}
+.disb-hub-strip span {padding:12px 17px;flex:1 1 160px}
+.disb-list-heading {padding:21px var(--cms-panel-gutter) 15px}
+.disb-list-filters {margin:0 var(--cms-panel-gutter) 14px}
+.disb-request-row {padding:17px var(--cms-panel-gutter);gap:13px}
+.disb-v922 .disb-pagination {padding:13px var(--cms-panel-gutter) 18px}
+.disb-review-toolbar {padding:20px clamp(18px,2.4vw,28px)}
+.disb-review-controls, .disb-review-actionbar {padding:18px clamp(18px,2.2vw,26px)}
+.disb-paper-stage {padding:clamp(18px,2.5vw,36px);min-width:0}
+.disb-paper {width:100%;max-width:794px}
+.disb-paper-head {padding:28px clamp(19px,3vw,37px) 22px}
+.disb-paper-body {padding:23px clamp(18px,2.8vw,35px) 30px}
+.disb-paper-section {margin-bottom:24px}
+.disb-paper-summary-grid > * {min-width:0}
+.disb-paper-table-scroller {overscroll-behavior-x:contain}
+.disb-paper-ledger > div {padding:10px 12px;gap:10px}
+.disb-review-actionbar > div, .disb-review-controls > div {min-width:0}
+.disb-history-fold, .disb-receipt-panel {padding:18px var(--cms-panel-gutter)}
+
+/* Standalone Docs/Sheets: avoid side-to-side content on small viewports. */
+.office-workspace {width:100%;min-width:0;max-width:1320px;padding:30px clamp(20px,3vw,46px) 60px}
+.office-library-heading {gap:18px;flex-wrap:wrap}
+.office-new-info, .office-library-create, .office-review-buttons {min-width:0}
+.office-global-head {padding-inline:clamp(14px,2vw,26px)}
+.office-sheet-menubar, .office-doc-menubar,
+.office-sheet-formatbar, .office-doc-formatbar {padding-inline:clamp(14px,2vw,26px)}
+.office-editor-bottom {padding-inline:clamp(14px,2vw,26px);flex-wrap:wrap}
+.office-doc-page-area {padding:30px clamp(14px,2.5vw,28px) 55px}
+
+@media (max-width: 960px) {
+  .main-content {padding:24px clamp(17px,2.5vw,27px) 70px}
+  .panel-head {flex-wrap:wrap}
+  .disb-paper-summary-grid {gap:15px}
+  .disb-review-top, .disb-review-toolbar {gap:14px}
+  .disb-review-amount {min-width:0}
+}
+@media (max-width: 700px) {
+  :root {--cms-panel-gutter:16px;--cms-card-gap:13px}
+  .main-content {padding:20px 16px calc(96px + env(safe-area-inset-bottom))}
+  .page-heading {margin-bottom:16px}
+  .panel-head {padding:15px var(--cms-panel-gutter)}
+  .panel-action-head > div:first-child {flex-basis:100%}
+  .panel-buttons {width:100%;justify-content:flex-start}
+  .panel > .filters, .panel > .report-filters {padding:13px 16px}
+  .table-wrap {padding:8px 9px 13px}
+  .data-table th, .data-table td {padding:10px 12px}
+  .receipt-paper, .receipt-inline-editor {padding:13px 12px}
+  .receipt-inline-row {gap:7px}
+  .cogs-review-row {padding:12px}
+  .modal-overlay {padding:12px 10px max(12px,env(safe-area-inset-bottom));align-items:center}
+  .modal, .modal-wide {width:100%;max-width:100%;max-height:calc(100dvh - 24px);border-radius:14px}
+  .modal-header {padding:17px 16px}
+  .modal-body {padding:17px 16px calc(22px + env(safe-area-inset-bottom))}
+  .disb-hub-head {padding:10px 2px 12px}
+  .disb-hub-strip span {flex:1 1 48%;padding:11px 13px}
+  .disb-request-row {grid-template-columns:minmax(0,1fr) auto 18px;gap:8px;padding:14px 16px}
+  .disb-request-row {grid-template-areas:"title amount arrow" "status status status"}
+  .disb-request-row > .disb-request-primary {grid-area:title}
+  .disb-request-row > .disb-request-amount {grid-area:amount}
+  .disb-request-row > .disb-badge {grid-area:status;justify-self:start}
+  .disb-request-row > svg:last-child {grid-area:arrow}
+  .disb-list-heading {padding:16px}
+  .disb-list-filters {margin:0 16px 12px}
+  .disb-review-top {flex-wrap:wrap}
+  .disb-review-status {min-width:0;flex-wrap:wrap}
+  .disb-review-toolbar {padding:17px 16px}
+  .disb-review-amount {align-items:flex-start}
+  .disb-paper-stage {padding:12px}
+  .disb-paper-head {padding:21px 15px 17px}
+  .disb-paper-body {padding:17px 13px 23px}
+  .disb-paper-meta {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .disb-paper-summary-grid {grid-template-columns:1fr;gap:16px}
+  .disb-paper-table {min-width:530px}
+  .disb-review-controls, .disb-review-actionbar {padding:16px}
+  .office-workspace {padding:20px 16px 36px}
+  .office-doc-page-area {padding:18px 12px 36px}
+}
+@media (max-width: 390px) {
+  .main-content {padding-inline:12px}
+  .modal-overlay {padding-inline:8px}
+  .disb-hub-strip span {flex-basis:100%}
+  .disb-paper-stage {padding:8px}
+  .disb-paper-head {padding-inline:12px}
+  .disb-paper-body {padding-inline:10px}
+  .disb-signatures {gap:14px 10px}
+}
+@media print {
+  /* Screen layout should not change financial/official paper dimensions. */
+  .main-content {padding:0;max-width:none}
+  .table-wrap {padding:0;overflow:visible}
+  .modal-overlay {display:none!important}
+  .disb-paper-stage {padding:0;border:0;background:transparent}
+  .disb-paper {max-width:none;box-shadow:none;border:0}
+  .disb-paper-head {padding:0 0 12px}
+  .disb-paper-body {padding:14px 0 0}
+  .disb-paper-table {min-width:0}
+  .disb-paper-summary-grid {grid-template-columns:1fr 1fr}
+  .report-selected-detail > p:not(.panel-hint) {margin:0;padding:8px 0;border:0;background:transparent}
+  .report-selected-detail > .report-detail-actions {display:none}
+}
