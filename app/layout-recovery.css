@@ -1,0 +1,174 @@
+/* HRMS shared UI layout recovery (October 2026)
+ * Restores missing component-specific classes without changing application state.
+ * Loaded after globals.css and universal-ui.css to preserve existing module themes.
+ */
+
+/* A flex/grid child must be allowed to shrink; long identifiers should wrap inside cards. */
+.app-shell .workspace,.app-shell .content,.app-shell .content>*,.app-shell .panel,
+.app-shell .rev-detail,.app-shell .phase2-area{min-width:0}
+.app-shell .panel{max-width:100%}
+.app-shell .table-wrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.app-shell .table-wrap>table{min-width:max-content}
+.app-shell .table-wrap td,.app-shell .table-wrap th{vertical-align:middle}
+.app-shell button:focus-visible,.app-shell a:focus-visible,.app-shell input:focus-visible,
+.app-shell select:focus-visible,.app-shell textarea:focus-visible{outline:2px solid #b88b15;outline-offset:2px}
+
+/* Employee 201 complete record: these classes existed in the component but not the CSS. */
+.employee-full-record{display:grid;gap:20px;min-width:0;padding:4px 0 10px}
+.employee-full-section{display:grid;gap:16px;min-width:0;padding:22px 23px;background:#fff;border:1px solid #e2e8f1;border-radius:15px;box-shadow:0 4px 20px rgba(20,39,66,.035);scroll-margin-top:118px}
+.employee-full-section>h3,.employee-full-head h3{font-size:16px;line-height:1.35;font-weight:750;letter-spacing:-.025em;color:#23334b;margin:0}
+.employee-full-section>h3{padding-bottom:13px;border-bottom:1px solid #edf0f5}
+.employee-full-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid #edf0f5}
+.employee-full-head .secondary{max-width:100%;white-space:normal;text-align:center}
+.employee-full-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.employee-full-field{display:grid;align-content:start;grid-auto-rows:min-content;gap:8px;min-width:0;margin:0;padding:14px 15px;border-radius:10px;background:#f7f9fc;border:1px solid #e8edf4;line-height:1.45;overflow-wrap:anywhere}
+.employee-full-field>small{display:block;font-size:11px;line-height:1.4;font-weight:650;letter-spacing:.015em;color:#64748b}
+.employee-full-field>strong{display:block;font-size:13px;line-height:1.5;font-weight:700;color:#223249;overflow-wrap:anywhere;white-space:normal}
+.employee-full-field>input,.employee-full-field>select,.employee-full-field>textarea{display:block;width:100%;min-width:0;max-width:100%;min-height:39px;padding:9px 11px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;color:#23334b;font-size:13px;font-weight:500}
+.employee-sensitive{border-color:#e3eaf3;background:linear-gradient(180deg,#fdfefe,#f8fafc)}
+.employee-sensitive>p,.employee-full-hint{margin:0;color:#67778f;font-size:12px;line-height:1.65;max-width:90ch}
+.employee-full-hint{padding:12px 15px;border-radius:9px;background:#fffaf0;border:1px solid #f0e4bd}
+.employee201-detail:has(.employee-full-record){align-items:stretch}
+
+/* Read-only report spreadsheet: keeps toolbar above an independently scrollable sheet. */
+.rs-root{display:grid;gap:0;min-width:0;max-width:100%;margin:15px 0 0;background:#fff;border:1px solid #dde5ef;border-radius:13px;box-shadow:0 4px 20px rgba(22,40,64,.035);overflow:hidden;color:#22334b}
+.rs-heading{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;padding:17px 19px;border-bottom:1px solid #e9edf4}
+.rs-heading>div{min-width:0;flex:1 1 280px}
+.rs-heading h3{display:flex;gap:9px;align-items:center;margin:0;font-size:16px;line-height:1.4}
+.rs-heading h3 svg{color:#b48510;flex-shrink:0}
+.rs-heading p{font-size:12px;color:#66778b;line-height:1.55;margin:6px 0 0}
+.rs-count{flex:none;align-self:center;padding:7px 10px;border-radius:7px;background:#eff4fa;color:#36516d;font-size:11px;font-weight:750}
+.rs-tabs{display:flex;gap:5px;max-width:100%;overflow-x:auto;padding:10px 14px 0;border-bottom:1px solid #e8edf4}
+.rs-tabs button{border:1px solid transparent;border-radius:8px 8px 0 0;background:transparent;padding:10px 13px;font-size:12px;color:#62748a;white-space:nowrap;font-weight:700}
+.rs-tabs button.selected,.rs-tabs button[aria-selected=true]{color:#674e09;background:#fff5d8;border-color:#e7c973;border-bottom-color:#fff5d8}
+.rs-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:8px;padding:12px 14px;background:#fbfcfe;border-bottom:1px solid #e4eaf2}
+.rs-toolbar>button{min-height:38px;white-space:nowrap}
+.rs-search,.rs-sort{display:grid;gap:5px;min-width:0;font-size:11px;font-weight:700;color:#687a91}
+.rs-search{flex:2 1 210px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #dae2eb;padding:0 10px;border-radius:8px;min-height:39px}
+.rs-search svg{flex-shrink:0;color:#7b8a9d}
+.rs-search input{border:0;outline:0;width:100%;min-width:0;background:transparent;font-size:12px;color:#26384d}
+.rs-sort{flex:1 1 180px}
+.rs-sort select{min-width:0;width:100%;min-height:39px;padding:8px;border:1px solid #dae2eb;border-radius:8px;background:#fff;color:#293b51;font-size:12px}
+.rs-formula{display:flex;align-items:center;min-width:0;gap:9px;padding:10px 14px;background:#fff;border-bottom:1px solid #e3e9f1}
+.rs-formula>span{font-size:12px;font-weight:750;color:#4a5c72;background:#f1f4f8;border-radius:6px;min-width:52px;text-align:center;padding:7px}
+.rs-formula>b{font-style:italic;color:#b48a1b;font-size:15px}
+.rs-formula input{width:100%;min-width:0;flex:1;font-size:12px;border:0;background:transparent;color:#34455a}
+.rs-formula button{flex-shrink:0}
+.rs-viewport{max-width:100%;overflow:auto;max-height:min(64vh,650px);overscroll-behavior:contain;background:#fff}
+.rs-table{width:max-content;min-width:100%;table-layout:auto;border-spacing:0;border-collapse:separate;font-size:12px}
+.rs-table th,.rs-table td{padding:0!important;min-width:126px;border-right:1px solid #e9edf3;border-bottom:1px solid #e9edf3;white-space:normal!important;vertical-align:middle}
+.rs-table thead th{position:sticky;top:0;z-index:2;background:#f5f7fb;color:#4b5e76;padding:9px 11px!important;text-align:left}
+.rs-table thead th.rs-colhead{min-width:150px}
+.rs-colhead span{display:block;line-height:1.5}
+.rs-letter{font-size:10px;color:#7b8ba0;letter-spacing:.09em}
+.rs-table .rs-index{min-width:45px;width:45px;text-align:center;background:#f7f9fc;color:#8390a1;font-weight:700;position:sticky;left:0;z-index:1;padding:8px!important}
+.rs-table thead .rs-index{z-index:3}
+.rs-cell{display:block;min-height:37px;width:100%;padding:9px 11px;border:0;border-radius:0;background:#fff;color:#233347;text-align:left;font-size:12px;line-height:1.45;white-space:normal;overflow-wrap:anywhere}
+.rs-table tbody tr:nth-child(even) .rs-cell{background:#fbfcfe}
+.rs-cell:hover{background:#fff9e8!important}
+.rs-cell.selected{outline:2px solid #d2a12e;outline-offset:-2px;background:#fff6d8!important}
+.rs-numeric .rs-cell,.rs-table tfoot .rs-numeric{text-align:right;font-variant-numeric:tabular-nums}
+.rs-table tfoot td,.rs-table tfoot th{background:#eef3fa!important;padding:11px!important;font-weight:800}
+.rs-empty{text-align:center!important;padding:30px 15px!important;color:#708097}
+.rs-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 15px;border-top:1px solid #e9edf4;background:#fafbfd;font-size:11px}
+.rs-footer>div{min-width:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rs-footer small{color:#748298;line-height:1.5}
+.rs-notice{display:inline-flex;align-items:center;gap:5px;color:#23714f;font-size:11px}
+.rs-pages{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.rs-pages label{display:flex;align-items:center;gap:5px;color:#65768c}
+.rs-pages select{max-width:80px;border:1px solid #d9e2ec;background:white;border-radius:7px;padding:6px;font-size:11px}
+.rs-pages button{padding:7px 9px!important}
+
+/* Fixed leave editor overlay (portal root is outside .app-shell). */
+.uc-modal-backdrop{position:fixed;inset:0;z-index:5000;background:rgba(13,25,43,.58);display:flex;justify-content:center;align-items:center;padding:18px;overscroll-behavior:contain}
+.uc-modal-dialog{width:min(100%,720px);max-height:min(92dvh,900px);overflow-y:auto;margin:0;min-width:0;background:#fff;border-radius:15px;box-shadow:0 25px 85px rgba(10,25,45,.24)}
+.uc-modal-dialog .leave-editor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* Attendance explorer: filter controls and metrics must not collapse into a text line. */
+.uc-demo-attendance{display:grid;gap:15px;min-width:0;padding:20px}
+.uc-attendance-toolbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.uc-attendance-toolbar label{display:grid;align-content:start;gap:6px;min-width:0;color:#53657c;font-size:12px;font-weight:700}
+.uc-attendance-toolbar select{min-width:0;width:100%;border:1px solid #d7e0ea;border-radius:9px;padding:10px 12px;background:#fff;color:#293b50;font-size:12px}
+.uc-attendance-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+.uc-attendance-stats>span{display:grid;gap:5px;padding:12px 11px;border:1px solid #e5ebf2;border-radius:10px;background:#f8fafc;font-size:11px;color:#61738a}
+.uc-attendance-stats b{font-size:18px;line-height:1.3;color:#21334b;font-variant-numeric:tabular-nums}
+.uc-demo-attendance .table-wrap td small{display:block;color:#8390a1;margin-top:4px}
+.uc-attendance-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:#65768a}
+.uc-attendance-bottom small{font-size:11px}
+.uc-attendance-state{display:inline-flex;padding:5px 8px;border-radius:7px;background:#e8f4eb;color:#25614a;font-size:11px;font-weight:700}
+.uc-attendance-state.attention{background:#fff0d4;color:#926111}
+
+/* Reports, Docs and recruitment additions lacking their original layout classes. */
+.hrms-workbook-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr));gap:12px;margin-top:15px}
+.hrms-workbook-cards>a{display:flex;align-items:center;gap:10px;min-width:0;padding:16px;border:1px solid #e2e8f0;border-radius:12px;background:#fafcfe;text-decoration:none;color:#293c54;font-size:12px;font-weight:750;overflow-wrap:anywhere}
+.hrms-workbook-cards>a:hover{background:#fff8e3;border-color:#e0c072}
+.studio-generated-pdfs{display:grid;gap:12px;margin-top:20px;min-width:0}
+.studio-generated-pdfs>div:not(.studio-section-head){min-width:0}
+.doc-library-clean{min-width:0;max-width:100%}
+.hire-manual-form{display:grid;gap:12px;min-width:0;max-width:100%}
+.uc-holiday-rate-reference{display:flex;align-items:flex-start;gap:9px;margin:12px 0;padding:11px 13px;border:1px solid #f0dda7;background:#fff9e9;border-radius:9px;font-size:12px;line-height:1.55;color:#715d32}
+.uc-holiday-rate-reference svg{flex-shrink:0}
+
+@media(max-width:1100px){
+ .employee-full-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .uc-attendance-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:720px){
+ .employee-full-section{padding:16px;gap:13px}
+ .employee-full-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .employee-full-field{padding:12px}
+ .rs-heading{padding:13px}
+ .rs-toolbar{padding:10px}
+ .rs-toolbar>button{flex:1 1 auto;justify-content:center}
+ .rs-viewport{max-height:55vh}
+ .uc-attendance-toolbar{grid-template-columns:1fr 1fr}
+ .uc-attendance-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .uc-demo-attendance{padding:14px}
+ .uc-modal-backdrop{padding:10px;align-items:center}
+ .uc-modal-dialog{max-height:calc(100dvh - 20px);border-radius:12px}
+ .uc-modal-dialog .leave-editor-grid{grid-template-columns:1fr}
+}
+@media(max-width:460px){
+ .employee-full-grid{grid-template-columns:1fr}
+ .employee-full-head .secondary{width:100%}
+ .rs-toolbar>button{flex:1 1 calc(50% - 8px)}
+ .rs-formula{gap:6px;padding:8px}
+ .rs-formula>span{min-width:42px}
+ .uc-attendance-toolbar{grid-template-columns:1fr}
+}
+
+/* Reports & Analytics: one view at a time, no duplicate rendering of sample data. */
+.gr-report-view-switch{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px;margin:12px 0;padding:4px;border:1px solid #e2e8f0;border-radius:10px;background:#f5f7fa;max-width:100%}
+.gr-report-view-switch button{border:0;border-radius:7px;background:transparent;color:#627287;padding:9px 13px;font-size:12px;font-weight:750}
+.gr-report-view-switch button.active,.gr-report-view-switch button[aria-pressed=true]{background:#fff;box-shadow:0 2px 6px #172b4112;color:#233951}
+.gr-report-view-switch button:focus-visible{outline:2px solid #b18a19;outline-offset:2px}
+
+/* Additional uncovered public, review and request screens found in the site scan. */
+.applicant-upload-shell{min-height:100dvh;display:grid;place-items:center;padding:24px 16px;background:#f5f7fb}
+.applicant-upload-box{width:min(100%,820px);min-width:0;padding:24px;border:1px solid #dfe6ef;background:white;border-radius:18px;box-shadow:0 10px 45px rgba(22,39,64,.07)}
+.applicant-upload-box>header{padding-bottom:16px;border-bottom:1px solid #e9eef5;margin-bottom:16px}
+.applicant-upload-box>header h1{font-size:clamp(19px,3vw,26px);line-height:1.25;letter-spacing:-.03em;margin:0 0 7px;color:#223349}
+.applicant-upload-box>header p{font-size:13px;color:#687991;margin:0}
+.applicant-upload-item{min-width:0;overflow-wrap:anywhere}
+.applicant-upload-summary{border:1px solid #e1e7ee;background:#f8fafc;border-radius:10px;padding:13px;margin:12px 0;line-height:1.55}
+.docops-template-redirect{padding:18px;min-width:0}
+.docops-template-redirect h3{margin-top:0}
+.ir2-list{min-width:0;max-width:100%}
+.ir2-doc-session{min-width:0;overflow-wrap:anywhere}
+.pc-month-empty{padding:24px 16px;border:1px dashed #d7e0eb;border-radius:11px;background:#fbfcfe;text-align:center;color:#66778b;font-size:12px;line-height:1.55}
+.mu-global-group{min-width:0}
+.studio-generated-pdfs{overflow-wrap:anywhere}
+.studio-merge-preview{display:grid;gap:12px;min-width:0;padding:16px 18px;border:1px solid #e1e7f0;border-radius:11px;background:#fbfcfe;margin:15px 0}
+.studio-merge-preview h3{font-size:14px;margin:0}
+.studio-merge-warning,.studio-merge-ok{border-radius:9px;padding:11px 13px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.studio-merge-warning{color:#7d5715;border:1px solid #ecd9a5;background:#fff8e6}
+.studio-merge-ok{color:#216347;border:1px solid #b9dec6;background:#ecf8f1}
+.studio-merge-missing{margin:7px 0;padding-left:22px;line-height:1.5}
+.wf-signing-document{min-width:0;overflow-wrap:anywhere}
+.leave-export{min-width:0}
+.dashboard-context{min-width:0;overflow-wrap:anywhere}
+.session-loading{display:grid;place-items:center;min-height:35vh;color:#5d6e84}
+.public-login-cta{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:560px){.applicant-upload-shell{padding:12px}.applicant-upload-box{padding:16px}.studio-merge-preview{padding:12px}}
+/* Preserve compact, legible navigation counters throughout the sidebar. */
+.uc-action-badge{font-variant-numeric:tabular-nums;white-space:nowrap}

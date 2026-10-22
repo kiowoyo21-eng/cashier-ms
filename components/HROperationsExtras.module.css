@@ -1,0 +1,44 @@
+.wrap{display:grid;gap:18px;min-width:0}.head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.head h2{margin:0;font-size:24px}.head p,.muted{color:#64748b;font-size:13px;line-height:1.55;margin:5px 0}.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.field{display:flex;flex-direction:column;gap:5px;min-width:145px;flex:1;font-size:12px;color:#475569;font-weight:600}.field input,.field select,.field textarea{width:100%;font:inherit;font-weight:400;background:#fff;border:1px solid #cbd5e1;border-radius:9px;padding:9px 11px;color:#0f172a;min-height:39px}.field textarea{min-height:92px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid #93c5fd;outline-offset:1px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}.metric{padding:15px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;min-width:0}.metric small{display:block;font-size:12px;color:#64748b;margin-bottom:8px}.metric strong{font-size:21px;overflow-wrap:anywhere;color:#172033}.panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:14px;align-items:start}.panel{border:1px solid #e2e8f0;border-radius:12px;padding:17px;background:#fff;min-width:0}.panel h3{margin:0 0 12px;font-size:16px}.pairs{display:grid;gap:8px}.pair{display:flex;justify-content:space-between;gap:10px;font-size:13px;align-items:center;border-bottom:1px solid #f1f5f9;padding:5px 0}.pair span:first-child{overflow-wrap:anywhere}.tableScroll{width:100%;max-width:100%;overflow:auto;border:1px solid #e2e8f0;border-radius:10px}.table{border-collapse:collapse;width:100%;min-width:790px;font-size:12px}.table th{position:sticky;top:0;z-index:1;background:#f1f5f9;color:#475569;text-align:left;padding:11px 12px;white-space:nowrap;border-bottom:1px solid #e2e8f0}.table td{border-bottom:1px solid #f1f5f9;padding:10px 12px;white-space:nowrap}.table tr:hover td{background:#f8fafc}.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.primary,.secondary{border-radius:8px;cursor:pointer;padding:9px 14px;font-weight:600;font-size:12px;min-height:38px}.primary{border:1px solid #1d4ed8;background:#1d4ed8;color:white}.secondary{border:1px solid #cbd5e1;background:#fff;color:#334155}.primary:disabled,.secondary:disabled{opacity:.5;cursor:not-allowed}.notice{background:#fff8e7;border:1px solid #f2daa0;color:#6b520d;border-radius:10px;padding:11px 13px;font-size:12px;line-height:1.6}.success{color:#166534;background:#dcfce7;padding:8px 12px;border-radius:8px;font-size:12px}.error{color:#9f1239;background:#ffe4e6;padding:8px 12px;border-radius:8px;font-size:12px}.subtabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid #e2e8f0;padding-bottom:10px}.subtabs button{background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:8px 12px;cursor:pointer;font-weight:600;color:#475569}.subtabs button[aria-selected="true"]{background:#dbeafe;color:#1e40af;border-color:#93c5fd}.formGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wide{grid-column:1/-1}.list{display:grid;gap:9px}.item{border:1px solid #e2e8f0;border-radius:10px;padding:13px;background:white;text-align:left;color:#0f172a;cursor:pointer}.item[aria-pressed="true"]{border:2px solid #2563eb;background:#eff6ff}.item small{display:block;color:#64748b;margin-top:6px}.sectionTitle{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}.sectionTitle h3{margin:0}.pill{display:inline-block;padding:3px 8px;border:1px solid #cbd5e1;border-radius:20px;background:#f8fafc;color:#475569;font-size:11px;max-width:100%;overflow-wrap:anywhere}.history{display:grid;gap:7px;list-style:none;padding:0;margin:12px 0}.history li{font-size:12px;border-left:3px solid #94a3b8;padding:7px 10px;background:#f8fafc}.empty{color:#64748b;padding:18px;text-align:center}.details{display:grid;gap:12px}.statrow{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}@media(max-width:1000px){.panels{grid-template-columns:1fr}}@media(max-width:600px){.panel{padding:12px}.formGrid{grid-template-columns:1fr}.toolbar{flex-direction:column;align-items:stretch}.field{width:100%}.metric strong{font-size:18px}.head h2{font-size:20px}}
+
+/* Batch 02 — Demographics summary and breakdowns use compact fixed-intent cards. */
+.wrap{gap:11px;max-width:100%}
+.head h2{font-size:18px}.head p{font-size:11px;line-height:1.4}
+.notice{padding:9px 12px;font-size:10.5px;line-height:1.5}
+.toolbar{gap:8px}.field{min-width:155px;flex:0 1 205px;font-size:11px}
+.field input,.field select{min-height:35px;padding:7px 9px;font-size:11px}
+.metrics{grid-template-columns:repeat(auto-fill,minmax(185px,225px));gap:9px;justify-content:start}
+.metric{display:grid;align-content:start;gap:8px;background:#fff;border-radius:11px;padding:11px 12px}
+.metricLabel{display:flex;align-items:center;gap:8px;min-width:0}.metric small{margin:0;font-size:10.5px;line-height:1.35}
+.metric strong{font-size:19px;line-height:1.2;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.iconShell{width:30px;height:30px;display:inline-grid;place-items:center;flex:none;border-radius:8px;color:#4c708f;background:#f0f5fa}
+.panels{grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
+.breakdowns{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,245px));gap:9px;align-items:start;justify-content:start}
+.panel{padding:12px 13px;border-radius:11px}
+.cardHeading{display:flex;align-items:center;gap:8px;font-size:12px!important;line-height:1.4;margin:0 0 9px!important}
+.pairs{gap:0}.pair{font-size:10.5px;padding:6px 0}.pair b{font-variant-numeric:tabular-nums}
+.tableScroll{max-width:100%;overflow-x:auto}
+.muted{font-size:10.5px;line-height:1.5}
+@media(max-width:600px){.head{align-items:flex-start}.metric strong{font-size:19px}.metrics{grid-template-columns:repeat(auto-fill,minmax(min(100%,175px),225px))}.breakdowns{grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),245px))}.field{width:100%;flex-basis:auto}}
+
+/* Batch 04 — operational request register; these rules intentionally do not alter Demographics. */
+.requestRegister{max-width:1120px;gap:10px;align-content:start}
+.requestRegister .head h2{font-size:17px}
+.requestRegister .head p{margin:2px 0 0;font-size:11px}
+.requestRegister .notice{max-width:920px;padding:9px 11px;line-height:1.45}
+.requestRegister .subtabs{width:fit-content;max-width:100%;padding-bottom:6px}
+.requestRegister .subtabs button{padding:7px 11px;font-size:11px;min-height:34px}
+.requestRegister .panels{display:grid;grid-template-columns:minmax(250px,325px) minmax(320px,660px);justify-content:start;gap:10px;align-items:start}
+.requestRegister .panel{min-width:0;padding:12px;border-radius:11px}
+.requestRegister .panel h3{font-size:13px;margin-bottom:9px}
+.requestRegister .toolbar{gap:7px;align-items:start}
+.requestRegister .toolbar .field{flex:1 1 100%;min-width:0;font-size:10.5px}
+.requestRegister .toolbar .field input,.requestRegister .toolbar .field select{min-height:35px;padding:7px 9px}
+.requestRegister .list{gap:6px}
+.requestRegister .item{padding:10px 11px;border-radius:8px}
+.requestRegister .item small{margin-top:4px;font-size:10.5px}
+.requestRegister .details{gap:9px}
+.requestRegister .empty{padding:14px 8px;font-size:11px}
+.requestRegister .history{gap:5px;margin:7px 0}
+.requestRegister .history li{padding:6px 8px;font-size:11px}
+@media(max-width:850px){.requestRegister .panels{grid-template-columns:minmax(0,660px)}}
+@media(max-width:600px){.requestRegister .panel{padding:11px}.requestRegister .head h2{font-size:16px}.requestRegister .toolbar .field{width:100%}}

@@ -1,0 +1,18 @@
+/* Universal UI V1: popovers render at document.body so they cannot be clipped by cards, tables or sidebars. */
+.uc-fixed-popover.mu-notice-popover,.uc-fixed-popover.uc-date-popover{position:fixed;inset:auto;z-index:10050;box-sizing:border-box;overscroll-behavior:contain;box-shadow:0 16px 45px rgba(15,23,42,.24)}
+.uc-fixed-popover.uc-date-popover{min-width:0;max-width:calc(100vw - 16px)}
+.uc-fixed-popover.mu-notice-popover{max-width:calc(100vw - 16px)}
+@media(max-width:480px){.uc-fixed-popover.uc-date-popover,.uc-fixed-popover.mu-notice-popover{border-radius:10px}}
+
+
+/* Batch 01: shared grouped-module tab surface. Individual module sections keep
+   existing controls and local persistence; the tab host only repositions them. */
+.hrms-unified-workspace{min-width:0;max-width:100%;display:grid;gap:12px;align-content:start}
+.hrms-unified-tabs{display:flex;align-items:center;gap:7px;flex-wrap:wrap;width:fit-content;max-width:100%;padding:5px;background:#f3f6fa;border:1px solid #e0e7ef;border-radius:12px}
+.hrms-unified-tabs button{border:1px solid transparent;border-radius:9px;background:transparent;color:#53647a;padding:9px 12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;font-size:12px;font-weight:600;line-height:1.4;font-family:inherit;cursor:pointer;white-space:nowrap}
+.hrms-unified-tabs button:hover{background:#fff;color:#293d56}
+.hrms-unified-tabs button.is-active{background:#fff;color:#173552;border-color:#dce4eb;box-shadow:0 1px 4px #24344b13}
+.hrms-unified-tabs button:focus-visible{outline:2px solid #d49d20;outline-offset:2px}
+.hrms-unified-workspace > :not(.hrms-unified-tabs){min-width:0}
+.hrms-tools .drive-shell,.hrms-tools .sw-home,.hrms-tools .studio-scope{max-width:100%;min-width:0}
+@media(max-width:720px){.hrms-unified-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain}.hrms-unified-tabs button{flex:0 0 auto}.hrms-unified-workspace{gap:9px}}
