@@ -1,0 +1,27 @@
+{
+  "employee_count": 35,
+  "asset_count": 50,
+  "leave_count": 15,
+  "approved_leave_days": 6,
+  "attendance_rows": 2135,
+  "branches": {
+    "UC Mandaluyong": 10,
+    "UC Las Piñas": 9,
+    "UC Quezon City": 8,
+    "MM Mandaluyong": 8
+  },
+  "asset_statuses": {
+    "Assigned": 30,
+    "Free": 10,
+    "Inspection": 4,
+    "Maintenance": 3,
+    "Pending Turnover": 3
+  },
+  "rates": {
+    "operations_monthly": 20000,
+    "office_daily": 755,
+    "admin_daily_placeholder": 755,
+    "marketing_daily": 755,
+    "supervisor_monthly_placeholder": 30000
+  }
+}

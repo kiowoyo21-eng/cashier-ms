@@ -1,0 +1,63 @@
+# Batch 01 document moves
+
+Historical documents were moved and link references updated where identifiable.
+
+| Original path | New path |
+|---|---|
+| `CHANGELOG.md` | `docs/changelogs/general/CHANGELOG.md` |
+| `CONSOLIDATED_CHANGELOG.md` | `docs/changelogs/general/CONSOLIDATED_CHANGELOG.md` |
+| `CONSOLIDATED_QA.md` | `docs/revisions/ui-qa/CONSOLIDATED_QA.md` |
+| `CONSOLIDATED_README.md` | `docs/readme/CONSOLIDATED_README.md` |
+| `INTEGRATION_REQUIREMENTS.md` | `docs/architecture/INTEGRATION-REQUIREMENTS.md` |
+| `NOTIFICATION_COVERAGE.md` | `docs/modules/notifications/NOTIFICATION-COVERAGE.md` |
+| `PATCH_README.md` | `docs/readme/PATCH_README.md` |
+| `QA_REPORT.md` | `docs/revisions/ui-qa/QA_REPORT.md` |
+| `README.md` | `docs/readme/PROJECT-OVERVIEW.md` |
+| `README_BUILD_FIX_2026-10-15.md` | `docs/readme/README_BUILD_FIX_2026-10-15.md` |
+| `ROLE_PERMISSIONS.md` | `docs/architecture/ROLE-PERMISSIONS.md` |
+| `UI_REUSE_NOTES.md` | `docs/architecture/UI-REUSE-NOTES.md` |
+| `UNIVERSAL_UI_REGRESSION_CHECKLIST.md` | `docs/revisions/ui-qa/UNIVERSAL_UI_REGRESSION_CHECKLIST.md` |
+| `WHOLE_SITE_UI_AUDIT.md` | `docs/revisions/ui-qa/WHOLE_SITE_UI_AUDIT.md` |
+| `docs/ASSET-ACCOUNTABILITY-STEP2-PATCH.md` | `docs/revisions/assets/ASSET-ACCOUNTABILITY-STEP2-PATCH.md` |
+| `docs/DEMOGRAPHICS_FORMS_DATA_MODEL.md` | `docs/architecture/DEMOGRAPHICS_FORMS_DATA_MODEL.md` |
+| `docs/DOCUMENT_STUDIO_FULL_WINDOW_PATCH.md` | `docs/revisions/tools/DOCUMENT_STUDIO_FULL_WINDOW_PATCH.md` |
+| `docs/EMPLOYEE-201-DISPLAY-AND-PAGINATION-PATCH.md` | `docs/revisions/employee-201/EMPLOYEE-201-DISPLAY-AND-PAGINATION-PATCH.md` |
+| `docs/EMPLOYEE-201-FILTERS-RELEASE.md` | `docs/revisions/employee-201/EMPLOYEE-201-FILTERS-RELEASE.md` |
+| `docs/EMPLOYEE201-DECISIONS-COMPACT-AND-DOCUMENT-PAPER-2026-10-12.md` | `docs/revisions/employee-201/EMPLOYEE201-DECISIONS-COMPACT-AND-DOCUMENT-PAPER-2026-10-12.md` |
+| `docs/FRONTEND-REVISION-CHECKLIST.md` | `docs/revisions/ui-qa/FRONTEND-REVISION-CHECKLIST.md` |
+| `docs/FULL-INTEGRATED-RELEASE-2026-10-12.md` | `docs/changelogs/general/FULL-INTEGRATED-RELEASE-2026-10-12.md` |
+| `docs/FUTURE_ACCOUNTING_HANDOFF.md` | `docs/workflows/FUTURE_ACCOUNTING_HANDOFF.md` |
+| `docs/HRMS_WORKSPACE_V2_SPREADSHEET_PATCH.md` | `docs/revisions/tools/HRMS_WORKSPACE_V2_SPREADSHEET_PATCH.md` |
+| `docs/PHASE-1-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-1-CHECKLIST.md` |
+| `docs/PHASE-10-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-10-CHECKLIST.md` |
+| `docs/PHASE-11-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-11-CHECKLIST.md` |
+| `docs/PHASE-13-REQUIREMENTS-AUDIT.md` | `docs/revisions/legacy-phases/PHASE-13-REQUIREMENTS-AUDIT.md` |
+| `docs/PHASE-14-AUDIT.md` | `docs/revisions/legacy-phases/PHASE-14-AUDIT.md` |
+| `docs/PHASE-2-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-2-CHECKLIST.md` |
+| `docs/PHASE-3-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-3-CHECKLIST.md` |
+| `docs/PHASE-4-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-4-CHECKLIST.md` |
+| `docs/PHASE-5-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-5-CHECKLIST.md` |
+| `docs/PHASE-5-DATABASE-BLUEPRINT.md` | `docs/architecture/PHASE-5-DATABASE-BLUEPRINT.md` |
+| `docs/PHASE-6-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-6-CHECKLIST.md` |
+| `docs/PHASE-7-DATABASE-BLUEPRINT.md` | `docs/architecture/PHASE-7-DATABASE-BLUEPRINT.md` |
+| `docs/PHASE-8-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-8-CHECKLIST.md` |
+| `docs/PHASE-8-DATABASE-BLUEPRINT.md` | `docs/architecture/PHASE-8-DATABASE-BLUEPRINT.md` |
+| `docs/PHASE-9-CHECKLIST.md` | `docs/revisions/legacy-phases/PHASE-9-CHECKLIST.md` |
+| `docs/PHASE-9-DATABASE-BLUEPRINT.md` | `docs/architecture/PHASE-9-DATABASE-BLUEPRINT.md` |
+| `docs/PUBLIC-FORMS-REVISION-CHECKLIST.md` | `docs/revisions/request-and-reports/PUBLIC-FORMS-REVISION-CHECKLIST.md` |
+| `docs/PUBLIC-INCIDENT-REPORT-REVIEW.md` | `docs/revisions/request-and-reports/PUBLIC-INCIDENT-REPORT-REVIEW.md` |
+| `docs/PUBLIC-IR-PATCH-CHECKLIST.md` | `docs/revisions/request-and-reports/PUBLIC-IR-PATCH-CHECKLIST.md` |
+| `docs/PUBLIC-IR-SIMPLIFICATION-CHANGELOG.md` | `docs/changelogs/request-and-reports/PUBLIC-IR-SIMPLIFICATION-CHANGELOG.md` |
+| `docs/REVISION-2026-10-12.md` | `docs/revisions/general/REVISION-2026-10-12.md` |
+| `docs/UCMM-BATCH1-PAYROLL-EMPLOYEE-2026-10-13.md` | `docs/revisions/employee-201/UCMM-BATCH1-PAYROLL-EMPLOYEE-2026-10-13.md` |
+| `docs/UCMM-GOVERNMENT-REPORT-SAMPLES-2026-10-12.md` | `docs/revisions/reports-analytics/UCMM-GOVERNMENT-REPORT-SAMPLES-2026-10-12.md` |
+| `docs/UCMM-HIRING-ATTENDANCE-MOCK-SAMPLES-2026-10-13.md` | `docs/revisions/hiring/UCMM-HIRING-ATTENDANCE-MOCK-SAMPLES-2026-10-13.md` |
+| `docs/UCMM-HR-2026-10-13-GLOBAL-UI-AND-SESSION-UPDATE.md` | `docs/revisions/ui-qa/UCMM-HR-2026-10-13-GLOBAL-UI-AND-SESSION-UPDATE.md` |
+| `docs/UCMM-HR-2026-10-13-PROCESS-AND-UI-REVISION-AUDIT.md` | `docs/revisions/ui-qa/UCMM-HR-2026-10-13-PROCESS-AND-UI-REVISION-AUDIT.md` |
+| `docs/UCMM-LEAVE-GOVT-HOLIDAYS-2026-10-13.md` | `docs/revisions/payroll-leave/UCMM-LEAVE-GOVT-HOLIDAYS-2026-10-13.md` |
+| `docs/UCMM-LOANS-IN-PAYROLL-PATCH.md` | `docs/revisions/payroll-leave/UCMM-LOANS-IN-PAYROLL-PATCH.md` |
+| `docs/UCMM-PAYROLL-CONTROL-PATCH.md` | `docs/revisions/payroll-leave/UCMM-PAYROLL-CONTROL-PATCH.md` |
+| `docs/UCMM-PAYROLL-WEEKLY-ATTENDANCE-DEDUCTION-PATCH.md` | `docs/revisions/payroll-leave/UCMM-PAYROLL-WEEKLY-ATTENDANCE-DEDUCTION-PATCH.md` |
+| `docs/UNIVERSAL_UI_QA_CHECKLIST.md` | `docs/revisions/ui-qa/UNIVERSAL_UI_QA_CHECKLIST.md` |
+| `docs/VERCEL-ASSET-BRANCH-TYPE-FIX.md` | `docs/revisions/ui-qa/VERCEL-ASSET-BRANCH-TYPE-FIX.md` |
+| `docs/WORKFLOW-RELIABILITY-REVIEW.md` | `docs/workflows/WORKFLOW-RELIABILITY-REVIEW.md` |
