@@ -158,3 +158,8 @@ This new request ledger is **distinct from the existing RF/RFP expense and reple
 ## v9.22 — Automatic Disbursement Paper Review
 
 The **Disbursement Requests** page now opens a consolidated, paper-style request generated automatically from all eligible RF/RFP expense records: **PB: four branches; Cashier: assigned branch only**. There is no longer an expense checkbox/selection stage. Existing saved requests remain accessible and previous submitted snapshots are retained. From the paper view, staff can open original receipts and download/print the A4 document. Pending external approvals are not simulated. See `REVISION_STATUS_V9_22.md` for details and release-cycle caveats.
+
+
+## v9.23 — UI Spacing & Container Cleanup
+
+Screen-only CSS revision to normalize outer page gutters, panel spacing, transaction details, Reports actions, POS quotation/COGS controls, Disbursement Paper, modals, and standalone Office workspaces. Mobile layouts now inset dialogs from device edges and keep wide tables scrollable within their section. The A4 disbursement print rules remain in effect. The PWA cache version was bumped to load the newer stylesheet. No accounts, transactions, role settings, localStorage schema, or approval logic changed. See `REVISION_STATUS_V9_23.md`.

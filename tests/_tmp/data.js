@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.posCOGS = exports.configurePendingProductPrices = exports.needsPriceConfiguration = exports.needsCostConfiguration = exports.paidTotal = exports.posTotal = exports.posLineTotal = exports.STORAGE_KEY = exports.number = exports.money = exports.pesos = exports.uid = exports.BRANCH_NAME = exports.timeMinutesPH = exports.monthRange = exports.vehicleName = exports.CAR_CATALOG = exports.RF_CATEGORIES = exports.BRANCHES = void 0;
+exports.posCOGS = exports.configurePendingProductPrices = exports.needsPriceConfiguration = exports.needsCostConfiguration = exports.paidTotal = exports.posTotal = exports.posLineTotal = exports.expenseGross = exports.STORAGE_KEY = exports.number = exports.money = exports.pesos = exports.uid = exports.BRANCH_NAME = exports.timeMinutesPH = exports.monthRange = exports.vehicleName = exports.CAR_CATALOG = exports.RF_CATEGORIES = exports.BRANCHES = void 0;
 exports.pendingRFPDisbursementRows = pendingRFPDisbursementRows;
 exports.todayPH = todayPH;
 exports.hourPH = hourPH;
@@ -101,7 +101,7 @@ exports.number = number;
  * The first administrator creates an account through the one-time setup screen. */
 function createSeed() {
     const empty = () => ({ UCQC: 0, UCM: 0, UCLP: 0, MMM: 0 });
-    return { users: [], fundEntries: [], pos: [], deletedPOSDrafts: [], inventory: [], stockMovements: [], stockRequests: [], stockReceipts: [], stockIssues: [], terminalEvents: [], terminalSettlements: [], counts: [], incidents: [], turnovers: [], requests: [], audit: [], settings: { rfBase: empty(), rfpBase: empty(), categories: [...exports.RF_CATEGORIES], signatories: { checked: '', approved: '' } } };
+    return { users: [], fundEntries: [], disbursementRequests: [], pos: [], deletedPOSDrafts: [], inventory: [], stockMovements: [], stockRequests: [], stockReceipts: [], stockIssues: [], terminalEvents: [], terminalSettlements: [], counts: [], incidents: [], turnovers: [], requests: [], audit: [], settings: { rfBase: empty(), rfpBase: empty(), categories: [...exports.RF_CATEGORIES], signatories: { checked: '', approved: '' } } };
 }
 /** Frontend-only first-run bootstrap. No preconfigured passwords or seed accounts. */
 function setupFirstAdmin(db, details) {
@@ -151,7 +151,7 @@ function removeLegacySeedFixtures(db) {
         return db;
     // Clear inherited demo fund balances only if the browser had *nothing else*
     // besides the three original seed expenses and original seed POS.
-    const noGenuineRecords = !pos.length && !fundEntries.length && !db.inventory.length && !db.stockMovements.length && !db.stockRequests.length && !db.stockReceipts.length && !(db.stockIssues || []).length && !(db.terminalEvents || []).length && !(db.terminalSettlements || []).length && !db.counts.length && !db.incidents.length && !db.turnovers.length && !db.requests.length && !audit.length;
+    const noGenuineRecords = !(db.disbursementRequests || []).length && !pos.length && !fundEntries.length && !db.inventory.length && !db.stockMovements.length && !db.stockRequests.length && !db.stockReceipts.length && !(db.stockIssues || []).length && !(db.terminalEvents || []).length && !(db.terminalSettlements || []).length && !db.counts.length && !db.incidents.length && !db.turnovers.length && !db.requests.length && !audit.length;
     const initialAmountsUnchanged = exports.BRANCHES.every(b => db.settings.rfBase[b.id] === 50000 && db.settings.rfpBase[b.id] === 120000);
     const settings = noGenuineRecords && initialAmountsUnchanged ? { ...db.settings, rfBase: { UCQC: 0, UCM: 0, UCLP: 0, MMM: 0 }, rfpBase: { UCQC: 0, UCM: 0, UCLP: 0, MMM: 0 } } : db.settings;
     const cleanAudit = noGenuineRecords ? audit : [{ id: (0, exports.uid)(), at: new Date().toISOString(), by: 'system', action: 'Legacy demo fixture cleanup', detail: `Removed ${db.pos.length - pos.length} untouched sample POS and ${db.fundEntries.length - fundEntries.length} untouched sample fund expense(s). Preserved genuine transactions and references.` }, ...audit];
@@ -207,6 +207,7 @@ function loadDB() { if (typeof window === 'undefined')
             d.stockReceipts = d.stockReceipts || [];
             d.stockIssues = d.stockIssues || [];
             d.deletedPOSDrafts = d.deletedPOSDrafts || [];
+            d.disbursementRequests = d.disbursementRequests || [];
             d.terminalEvents = d.terminalEvents || [];
             d.terminalSettlements = d.terminalSettlements || [];
             const cleaned = removeLegacySeedFixtures(removeUntouchedDemoProducts(d));
@@ -230,9 +231,11 @@ function storeDB(db) { try {
 catch {
     return false;
 } }
+const expenseGross = (entry) => Math.round((entry.amount + (entry.onlineCharge || 0)) * 100) / 100;
+exports.expenseGross = expenseGross;
 function balance(db, branch, fund) {
     const initial = (fund === 'RF' ? db.settings.rfBase : db.settings.rfpBase)[branch] || 0;
-    return db.fundEntries.filter(e => e.branch === branch && e.fund === fund && e.status !== 'Rejected').reduce((sum, e) => sum + (e.kind === 'replenishment' ? (e.status === 'Approved' ? e.amount : 0) : -e.amount), initial);
+    return db.fundEntries.filter(e => e.branch === branch && e.fund === fund && e.status !== 'Rejected').reduce((sum, e) => sum + (e.kind === 'replenishment' ? (e.status === 'Approved' ? e.amount : 0) : -(0, exports.expenseGross)(e)), initial);
 }
 /** Only replace cash that has already been spent and not yet replenished.
  * Pending replenishments are not included in the cash-on-hand balance; a second
@@ -245,7 +248,7 @@ function replenishmentDue(db, branch, fund) {
 function branchFundTotals(db, fund) {
     const rows = exports.BRANCHES.map(b => {
         const target = (fund === 'RF' ? db.settings.rfBase : db.settings.rfpBase)[b.id] || 0;
-        const expenses = db.fundEntries.filter(e => e.branch === b.id && e.fund === fund && e.kind === 'expense' && e.status !== 'Rejected').reduce((n, e) => n + e.amount, 0);
+        const expenses = db.fundEntries.filter(e => e.branch === b.id && e.fund === fund && e.kind === 'expense' && e.status !== 'Rejected').reduce((n, e) => n + (0, exports.expenseGross)(e), 0);
         const received = db.fundEntries.filter(e => e.branch === b.id && e.fund === fund && e.kind === 'replenishment' && e.status === 'Approved').reduce((n, e) => n + e.amount, 0);
         return { branch: b.id, name: b.name, target, expenses, received, remaining: balance(db, b.id, fund), toReplenish: replenishmentDue(db, b.id, fund) };
     });
@@ -762,7 +765,7 @@ function downloadFile(name, content, mime = 'text/csv;charset=utf-8') {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
-function categoryTotals(entries) { return entries.filter(e => e.fund === 'RF' && e.kind === 'expense' && e.status !== 'Rejected').reduce((result, e) => { result[e.category] = (result[e.category] || 0) + e.amount; return result; }, {}); }
+function categoryTotals(entries) { return entries.filter(e => e.fund === 'RF' && e.kind === 'expense' && e.status !== 'Rejected').reduce((result, e) => { result[e.category] = (result[e.category] || 0) + (0, exports.expenseGross)(e); return result; }, {}); }
 function matchingPOS(db, branch, plate) { return db.pos.filter(p => p.branch === branch && normalizePlate(p.plate) === normalizePlate(plate)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); }
 /** Frontend-only plate directory for POS suggestions. Prefer latest POS contact and PB car when no sale yet. */
 function plateSuggestions(db, branch, term) {
@@ -824,10 +827,10 @@ function assignConsumedStockToPOS(db, branch, rawPlate, lines, by, posId) {
 function disbursementSummary(db, branch, fund, from = '', to = '') {
     const base = (fund === 'RF' ? db.settings.rfBase : db.settings.rfpBase)[branch] || 0;
     const rows = db.fundEntries.filter(e => e.branch === branch && e.fund === fund && e.status !== 'Rejected');
-    const signed = (e) => e.kind === 'expense' ? -e.amount : e.status === 'Approved' ? e.amount : 0;
+    const signed = (e) => e.kind === 'expense' ? -(0, exports.expenseGross)(e) : e.status === 'Approved' ? e.amount : 0;
     const opening = base + rows.filter(e => !!from && e.date < from).reduce((n, e) => n + signed(e), 0);
     const period = rows.filter(e => reportDateMatch(e.date, from, to));
-    const expenses = period.filter(e => e.kind === 'expense').reduce((n, e) => n + e.amount, 0);
+    const expenses = period.filter(e => e.kind === 'expense').reduce((n, e) => n + (0, exports.expenseGross)(e), 0);
     const deposits = period.filter(e => e.kind === 'replenishment' && e.status === 'Approved').reduce((n, e) => n + e.amount, 0);
     const remaining = opening + deposits - expenses;
     return { base, opening, expenses, deposits, remaining, amountRequested: Math.max(0, base - remaining), period, checkDeposits: period.filter(e => e.kind === 'replenishment' && e.status === 'Approved') };
