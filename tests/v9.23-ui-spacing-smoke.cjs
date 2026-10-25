@@ -19,5 +19,5 @@ for(const filename of ['app/page.tsx','lib/data.ts','lib/disbursement-requests.t
   assert(fs.existsSync(path.join(root,filename)),`Must preserve ${filename}`);
 }
 const pkg = JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-assert.strictEqual(pkg.version,'9.23.0');
+assert(/^9\.(23|24|25)\./.test(pkg.version), 'Legacy v9.23 spacing must remain in newer minor versions');
 console.log('PASS v9.23 UI spacing rules: consistent workspace/panel gutters, responsive tables/dialogs, disbursement paper, office pages, and print-safe overrides.');

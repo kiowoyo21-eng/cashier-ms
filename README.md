@@ -1,3 +1,20 @@
+## v9.25 — Admin Profitability Analytics (management estimate)
+
+Admin sidebar → **Profitability Analytics**: an operational management report using browser-local POS, cost/stock and RF/RFP records. Filters cover current/previous month, year or custom dates and combined Underchargers, Mastermind, or an individual branch. The management total in ALL mode is only a comparison; companies remain reported separately. Data is read-only with source-record drilldown and CSV export.
+
+**Logic:** Closed POS sales (by closing date) − existing `posCOGS` (matching PB and stock consumption) = gross profit. Less RF expense totals and RFP online payment charges = **estimated earnings from recorded costs**. Paid customer deposits in open POS, fund replenishments/transfers and inventory receipts are **not** sales or expenses; unallocated RFP purchase principal is disclosed but not deducted again.
+
+**Not final net earnings:** CMS does not yet maintain complete payroll, rent, depreciation, interest, tax, accruals, or verified bank reconciliation, and source COGS may need duplicate-cost review. Pending expenses, zero-COGS closed POS, refunds and unallocated purchases are flagged. The separate Accounting system remains responsible for final accounting net income. The frontend-only Admin role guard is not server-side authorization until shared-backend security is implemented. No database migration or reset is required.
+
+Validation: `npm run test:profitability`, `npm run check:components`, `npm run check:view-maps`. Full Next.js build requires npm packages/network and must be verified in Vercel.
+
+## v9.24 — Cleaner multi-device UI (October 2026)
+
+- Unified readable sizing and responsive spacing via `app/clean-ui.css`.
+- Phone: role-aware five-slot nav with a New/Review center action; tablet: icon sidebar rail; desktop: full labelled navigation.
+- POS progress, unified Today alert, accessible dialogs, accurate status badges and confirmation overlays.
+- Important: source tests pass, but full Vercel production build / actual browser QA still need verification. See `REVISION_STATUS_V9_24.md`.
+
 > **Latest frontend revision: v9.21 — Auto-Generated Disbursements.** PB and Cashier select already-recorded RFP/RF expenses to prepare one request with automatically computed charges, consolidated four-branch PB summary or one-branch Cashier summary, source-linked receipts, A4 portrait paper, downloadable PDF with receipts, approval timeline, and contextual Reports actions. No duplicated expenses, copied receipt blobs or fabricated Accounting/Ms Kate approvals. See `REVISION_STATUS_V9_21.md`.
 
 > **Latest frontend revision: v9.17.1** — Login upgrade hotfix: existing accounts are no longer silently deleted when upgrading. New installs remain empty. First-time Admin setup includes **Restore existing backup (JSON)** to recover a prior local account database if a backup exists. See `REVISION_STATUS_V9_17_1.md`.
