@@ -1,3 +1,16 @@
+## CMS v9.27 — Financial Account Balances & Supplier Approvals
+
+- Admin → Financial Monitoring → Account Balances: add company/branch-scoped operational Cash, Bank, Terminal/QR, or Other accounts; set the verified starting balance and date, with audit history. Record manual inflow/outflow by unique reference or correct the opening balance. This is **not** live bank balance, and is not automatically linked to the POS or RF/RFP ledger; account entries require careful reconciliation.
+- Suppliers is now available to Admin, Parts Buyer, and Cashier. Admin creates supplier/master prices directly; PB and Cashier submit **Pending Admin Approval** changes for supplier creation or product/price recording. Admin explicitly approves or rejects. Pending requests do not change approved master prices or stock.
+- New PB Parts Purchase expenses keep their original expense/receipt independent of the approval and send unapproved supplier and product/price updates to the queue. Old RFP history and existing v9.26 approved supplier records are retained; reload never auto-approves queued suggestions.
+- A clearly marked **SAMPLE — Demo Auto Parts Supplier** with five illustrative products/prices is available on clean supplier catalogues when an Admin is present, and via the Admin "Load Sample Supplier & Prices" button for established catalogues. This does not create a real supplier, stock, payment, AP debt, or RFP expense.
+- Previous Supplier Opening Payable records remain archived/read-only. They are **not** financial account opening balances.
+- Frontend browser storage is isolated by browser profile and device. Live cross-user Admin review, bank verification, or CRM/Accounting synchronization requires a real shared backend; do not treat local approval status as an authenticated multi-user decision.
+
+See `REVISION_STATUS_V9_27.md` and `PATCH_MANIFEST_V9_27.md` for rollout steps. Apply patch to **v9.26** only. Back up browser data before installing; do not clear localStorage.
+
+---
+
 ## v9.26 — Supplier Master (Admin & Parts Buyer)
 
 New **Suppliers** sidebar module with a clickable supplier directory. Click a supplier to see contact details, branches, products and purchase price history, source RFP purchases with receipt access, and company-specific opening payables. Admin can set supplier opening payable balances (UC/MM separate), create/edit supplier profiles and add manual product prices. Existing and new RFP purchases automatically match known supplier names or create a new supplier and product, with no duplicate expense, stock receipt or AP charge. Existing local data is retained. No live CRM/Accounting synchronization; supplier IDs are local until the future shared supplier database is connected.

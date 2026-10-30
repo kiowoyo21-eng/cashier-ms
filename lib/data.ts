@@ -1,4 +1,5 @@
-import type {SupplierRecord,SupplierProduct,SupplierPriceEvent,SupplierOpeningHistory} from './suppliers';
+import type {SupplierRecord,SupplierProduct,SupplierPriceEvent,SupplierOpeningHistory,SupplierChangeRequest} from './suppliers';
+import type {FinancialAccount,AccountLedgerEntry} from './financial-accounts';
 import type {DisbursementRequest} from './disbursement-requests';
 export type Role = 'admin'|'cashier'|'pb';
 export type Status = 'Pending'|'Approved'|'Rejected'|'Report Required'|'Report Submitted';
@@ -71,7 +72,8 @@ export interface Turnover {id:string;branch:BranchId;date:string;amount:number;n
 export interface ChangeRequest {id:string;type:'Edit RFP'|'Change Branch';entryId:string;branch:BranchId;requestedBy:string;changes:Partial<FundEntry>;original?:Partial<FundEntry>;reason:string;status:'Pending'|'Approved'|'Rejected';createdAt:string;decidedBy?:string;}
 export interface Audit {id:string;at:string;by:string;action:string;detail:string;}
 export interface Database {
-  suppliers?:SupplierRecord[];supplierProducts?:SupplierProduct[];supplierPriceEvents?:SupplierPriceEvent[];supplierOpeningHistory?:SupplierOpeningHistory[];
+  suppliers?:SupplierRecord[];supplierProducts?:SupplierProduct[];supplierPriceEvents?:SupplierPriceEvent[];supplierOpeningHistory?:SupplierOpeningHistory[];supplierChangeRequests?:SupplierChangeRequest[];
+  financialAccounts?:FinancialAccount[];accountLedger?:AccountLedgerEntry[];sampleCatalogueInitialized?:boolean;
   users:User[];fundEntries:FundEntry[];disbursementRequests?:DisbursementRequest[];pos:POS[];deletedPOSDrafts?:DeletedPOSDraft[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];stockReceipts:StockReceipt[];stockIssues?:StockIssueRequest[];terminalEvents?:TerminalEvent[];terminalSettlements?:TerminalSettlement[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
   settings:{rfBase:Record<BranchId,number>;rfpBase:Record<BranchId,number>;categories:string[];signatories?:{checked:string;approved:string};reportLogo?:Receipt};
 }
