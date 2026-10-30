@@ -7,6 +7,8 @@ try{
  let db=d.createSeed();assert.equal(db.suppliers.length,0,'New browser starts with empty supplier database');
  db=s.createSupplier(db,'ABC Auto Parts','admin');let supplier=db.suppliers[0];assert.equal(supplier.name,'ABC Auto Parts');
  assert.throws(()=>s.createSupplier(db,'  abc   auto parts ','admin'),/already exists/i,'Duplicate supplier is blocked');
+ db.users=[{id:'admin',role:'admin',name:'Admin',username:'admin',password:'x',branch:'UCM',active:true}];
+ db=s.setSupplierMode(db,supplier.id,'opening_payable','admin');
  db=s.setSupplierOpening(db,supplier.id,'UC',1950.29,'2026-10-30','Verified statement','admin');
  db=s.setSupplierOpening(db,supplier.id,'MM',245.05,'2026-10-30','Verified statement','admin');
  assert.equal(db.suppliers[0].openingPayable.UC,1950.29);assert.equal(db.suppliers[0].openingPayable.MM,245.05);

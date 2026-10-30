@@ -1,3 +1,16 @@
+## CMS v9.28 — Supplier Types: Ledger Only / With Opening Payable
+
+- **Ledger Only (default):** supplier details, products, unit-price ledger and RFP purchase/receipt links; no opening payable fields on the ordinary supplier view.
+- **With Opening Payable (optional):** the same ledger plus Admin-managed opening payable references per accounting entity (UC and MM), an as-of date, reason, and audit history. These are opening reference figures, **not** a full live AP balance; purchases do not change them automatically.
+- Admin can change a supplier type; cannot change to Ledger Only with nonzero opening liabilities until the amounts are corrected in an audited action. Legacy nonzero opening records remain in With Opening Payable and historical changes are retained.
+- PB/Cashier can propose a supplier type on a new supplier request; the request remains Pending until Admin approval. Existing PB/Cashier product-price approvals remain unchanged.
+- Admin Financial Monitoring → Account Balances is **separate** and unchanged, as are the single shared RFP Fund and current expenses. No browser data reset or fresh sample expense is performed.
+- Browser-local supplier approvals are not synchronized across devices until the future shared backend exists.
+
+See `REVISION_STATUS_V9_28.md` and `PATCH_MANIFEST_V9_28.md`. Apply the patch to **v9.27**, not earlier versions.
+
+---
+
 ## CMS v9.27 — Financial Account Balances & Supplier Approvals
 
 - Admin → Financial Monitoring → Account Balances: add company/branch-scoped operational Cash, Bank, Terminal/QR, or Other accounts; set the verified starting balance and date, with audit history. Record manual inflow/outflow by unique reference or correct the opening balance. This is **not** live bank balance, and is not automatically linked to the POS or RF/RFP ledger; account entries require careful reconciliation.

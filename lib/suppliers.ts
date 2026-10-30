@@ -2,10 +2,19 @@ import type {BranchId,Database,FundEntry} from './data';
 import {uid,log} from './data';
 
 export type SupplierEntity='UC'|'MM';
+/** A catalogue-only supplier has no payable fields in the normal UI. */
+export type SupplierMode='ledger'|'opening_payable';
+export const supplierModeLabel=(mode:SupplierMode)=>mode==='opening_payable'?'With Opening Payable':'Ledger Only';
+/** Preserve older nonzero payable records; missing mode on zero-balance suppliers means Ledger Only. */
+export function effectiveSupplierMode(s:SupplierRecord):SupplierMode {
+ if(s.mode==='ledger'||s.mode==='opening_payable')return s.mode;
+ return (s.openingPayable?.UC||0)>0||(s.openingPayable?.MM||0)>0?'opening_payable':'ledger';
+}
+
 export const supplierEntity=(branch:BranchId):SupplierEntity=>branch==='MMM'?'MM':'UC';
 export interface SupplierRecord {
  id:string;name:string;contactPerson:string;phone:string;email:string;tin:string;address:string;notes:string;
- branches:BranchId[];openingPayable:{UC:number;MM:number};openingDate:{UC:string;MM:string};
+ branches:BranchId[];mode?:SupplierMode;openingPayable:{UC:number;MM:number};openingDate:{UC:string;MM:string};
  createdAt:string;createdBy:string;updatedAt?:string;updatedBy?:string;inactive?:boolean;
 }
 export interface SupplierProduct {
@@ -27,11 +36,12 @@ const validMoney=(value:number)=>Number.isFinite(value)&&value>=0&&Math.abs(Math
 export function ensureSupplierCollections(db:Database):Database{
  return {...db,suppliers:db.suppliers||[],supplierProducts:db.supplierProducts||[],supplierPriceEvents:db.supplierPriceEvents||[],supplierOpeningHistory:db.supplierOpeningHistory||[]};
 }
-export function createSupplier(db:Database,name:string,by:string):Database{
+export function createSupplier(db:Database,name:string,by:string,mode:SupplierMode='ledger'):Database{
  const next=ensureSupplierCollections(db);const clean=name.trim().replace(/\s+/g,' ');
  if(clean.length<2)throw new Error('Supplier name must have at least two characters.');
+ if(mode!=='ledger'&&mode!=='opening_payable')throw new Error('Invalid supplier type.');
  if(next.suppliers!.some(s=>supplierKey(s.name)===supplierKey(clean)))throw new Error('Supplier already exists. Open it from the list.');
- const supplier:SupplierRecord={id:uid(),name:clean,contactPerson:'',phone:'',email:'',tin:'',address:'',notes:'',branches:[],openingPayable:{UC:0,MM:0},openingDate:{UC:'',MM:''},createdAt:new Date().toISOString(),createdBy:by};
+ const supplier:SupplierRecord={id:uid(),name:clean,contactPerson:'',phone:'',email:'',tin:'',address:'',notes:'',branches:[],mode,openingPayable:{UC:0,MM:0},openingDate:{UC:'',MM:''},createdAt:new Date().toISOString(),createdBy:by};
  return log({...next,suppliers:[...next.suppliers!,supplier]},by,'Supplier created',`${supplier.name} · ${supplier.id}`);
 }
 export function editSupplier(db:Database,id:string,changes:Partial<Pick<SupplierRecord,'name'|'contactPerson'|'phone'|'email'|'tin'|'address'|'notes'|'branches'>>,by:string):Database{
@@ -41,8 +51,22 @@ export function editSupplier(db:Database,id:string,changes:Partial<Pick<Supplier
  const updated={...supplier,...changes,name,branches:Array.from(new Set(changes.branches??supplier.branches)),updatedAt:new Date().toISOString(),updatedBy:by};
  return log({...next,suppliers:next.suppliers!.map(s=>s.id===id?updated:s)},by,'Supplier updated',`${supplier.id} · ${name}`);
 }
+/** Changing type never silently writes off an existing supplier opening payable. */
+export function setSupplierMode(db:Database,id:string,mode:SupplierMode,by:string):Database{
+ const admin=db.users.find(u=>u.id===by&&u.active&&u.role==='admin');
+ if(!admin)throw new Error('Only Admin can change supplier type.');
+ if(mode!=='ledger'&&mode!=='opening_payable')throw new Error('Invalid supplier type.');
+ const next=ensureSupplierCollections(db),supplier=next.suppliers!.find(s=>s.id===id);
+ if(!supplier)throw new Error('Supplier not found.');
+ if(mode==='ledger'&&((supplier.openingPayable?.UC||0)>0||(supplier.openingPayable?.MM||0)>0))
+  throw new Error('Clear existing opening payable amounts with audited corrections before changing to Ledger Only.');
+ const updated={...supplier,mode,updatedAt:new Date().toISOString(),updatedBy:by};
+ return log({...next,suppliers:next.suppliers!.map(s=>s.id===id?updated:s)},by,'Supplier type updated',`${supplier.name} · ${supplierModeLabel(mode)}`);
+}
 export function setSupplierOpening(db:Database,id:string,entity:SupplierEntity,amount:number,asOf:string,reason:string,by:string):Database{
+ const admin=db.users.find(u=>u.id===by&&u.active&&u.role==='admin');if(!admin)throw new Error('Only Admin can set supplier opening payable.');
  const next=ensureSupplierCollections(db),s=next.suppliers!.find(x=>x.id===id);if(!s)throw new Error('Supplier not found.');
+ if(effectiveSupplierMode(s)!=='opening_payable')throw new Error('Supplier is Ledger Only. Switch to With Opening Payable first.');
  if(!validMoney(amount))throw new Error('Opening payable must be a valid nonnegative amount with up to two decimals.');
  if(!/^\d{4}-\d{2}-\d{2}$/.test(asOf))throw new Error('Choose an opening balance as-of date.');
  if(!reason.trim())throw new Error('Enter a reason or source for the opening balance.');
@@ -70,7 +94,7 @@ export function syncSupplierPurchases(db:Database):Database{
  for(let i=0;i<entries.length;i++){
   const e=entries[i];if(e.kind!=='expense'||e.fund!=='RFP'||e.status==='Rejected'||!e.payee.trim()||!e.description.trim()||(base.supplierChangeRequests||[]).some(r=>r.sourceFundEntryId===e.id))continue;
   let supplier=suppliers.find(s=>s.id===e.supplierId)||suppliers.find(s=>supplierKey(s.name)===supplierKey(e.payee));
-  if(!supplier){supplier={id:uid(),name:e.payee.trim().replace(/\s+/g,' '),contactPerson:'',phone:'',email:'',tin:'',address:'',notes:'',branches:[e.branch],openingPayable:{UC:0,MM:0},openingDate:{UC:'',MM:''},createdAt:e.createdAt,createdBy:e.createdBy};suppliers.push(supplier);changed=true;}
+  if(!supplier){supplier={id:uid(),name:e.payee.trim().replace(/\s+/g,' '),contactPerson:'',phone:'',email:'',tin:'',address:'',notes:'',branches:[e.branch],mode:'ledger',openingPayable:{UC:0,MM:0},openingDate:{UC:'',MM:''},createdAt:e.createdAt,createdBy:e.createdBy};suppliers.push(supplier);changed=true;}
   if(!supplier.branches.includes(e.branch)&&!events.some(p=>p.sourceFundEntryId===e.id)){const nextS={...supplier,branches:[...supplier.branches,e.branch]};suppliers[suppliers.findIndex(s=>s.id===supplier!.id)]=nextS;supplier=nextS;changed=true;}
   let product=products.find(p=>p.id===e.supplierProductId&&p.supplierId===supplier!.id)||products.find(p=>p.supplierId===supplier!.id&&productKey(p.name)===productKey(e.description));
   if(!product){product={id:uid(),supplierId:supplier.id,name:e.description.trim().replace(/\s+/g,' '),unit:'Piece',createdAt:e.createdAt,createdBy:e.createdBy};products.push(product);changed=true;}
@@ -94,17 +118,18 @@ export function supplierPurchases(db:Database,supplierId:string):FundEntry[]{
 /** Only Admin-approved changes become part of the live supplier catalogue. */
 export interface SupplierChangeRequest {
  id:string;kind:'Supplier'|'ProductPrice';supplierId?:string;supplierName:string;
- productName?:string;unit?:string;unitCost?:number;effectiveDate?:string;sourceFundEntryId?:string;
+ productName?:string;unit?:string;unitCost?:number;effectiveDate?:string;sourceFundEntryId?:string;supplierMode?:SupplierMode;
  status:'Pending'|'Approved'|'Rejected';requestedBy:string;requestedAt:string;
  decidedBy?:string;decidedAt?:string;decisionNotes?:string;
 }
 const requester=(db:Database,by:string)=>{const u=db.users.find(u=>u.id===by&&u.active);if(!u||!['admin','pb','cashier'].includes(u.role))throw new Error('Valid active staff account required.');return u};
-export function requestSupplierChange(db:Database,by:string,request:Pick<SupplierChangeRequest,'kind'|'supplierId'|'supplierName'|'productName'|'unit'|'unitCost'|'effectiveDate'|'sourceFundEntryId'>):Database{
+export function requestSupplierChange(db:Database,by:string,request:Pick<SupplierChangeRequest,'kind'|'supplierId'|'supplierName'|'productName'|'unit'|'unitCost'|'effectiveDate'|'sourceFundEntryId'|'supplierMode'>):Database{
  const actor=requester(db,by),next=ensureSupplierCollections(db);if(actor.role==='admin')throw new Error('Admin should use direct supplier actions.');
  const name=request.supplierName.trim().replace(/\s+/g,' ');
  if(name.length<2)throw new Error('Supplier name is required.');
  const supplier=(next.suppliers||[]).find(s=>s.id===request.supplierId)||next.suppliers!.find(s=>supplierKey(s.name)===supplierKey(name));
  if(request.kind==='Supplier'&&supplier)throw new Error('Supplier already exists. Choose it instead.');
+ if(request.kind==='Supplier'&&request.supplierMode&&request.supplierMode!=='ledger'&&request.supplierMode!=='opening_payable')throw new Error('Invalid supplier type.');
  if(request.kind==='ProductPrice'){
   if(!request.productName?.trim()||request.productName.trim().length<2)throw new Error('Product name is required.');
   if(!Number.isFinite(request.unitCost)||!validMoney(request.unitCost||0)||!(request.unitCost&&request.unitCost>0))throw new Error('Enter a valid positive unit price.');
@@ -125,7 +150,7 @@ export function decideSupplierChange(db:Database,adminId:string,id:string,decisi
  if(decision==='Approved'){
   if(item.kind==='Supplier'){
    const found=(db.suppliers||[]).find(s=>supplierKey(s.name)===supplierKey(item.supplierName));
-   if(!found)next=createSupplier(db,item.supplierName,adminId);
+   if(!found)next=createSupplier(db,item.supplierName,adminId,item.supplierMode||'ledger');
   }else{
    const supplier=(db.suppliers||[]).find(s=>s.id===item.supplierId)||db.suppliers?.find(s=>supplierKey(s.name)===supplierKey(item.supplierName));
    if(!supplier)throw new Error('Approve the supplier record first before approving its product.');
