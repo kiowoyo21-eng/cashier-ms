@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const page=read('app/page.tsx'),ui=read('components/Ui.tsx'),css=read('app/clean-ui.css');
 const pkg=JSON.parse(read('package.json'));
-assert.match(pkg.version,/^9\.(24|25)\./,'v9.24 UI retained in subsequent releases');
+assert.match(pkg.version,/^9\.(24|25|26)\./,'v9.24 UI retained in subsequent releases');
 assert(read('app/layout.tsx').includes("import './clean-ui.css';"),'Load a separate grouped design system, not another global patch block');
 for(const rule of ['--cms-text','--cms-panel-gutter','.cms-today-strip','.stats-grid','.data-table','.modal-overlay','.mobile-bottom-nav','.mobile-primary-action','.cms-pos-progress','.cms-confirm-dialog',':focus-visible','prefers-reduced-motion','min-width: 700px','max-width: 699px','@media print'])assert(css.includes(rule),`Missing clean UI rule ${rule}`);
 assert(page.includes('cms-today-strip'),'Consolidate cashier alert banners');

@@ -1,3 +1,4 @@
+import type {SupplierRecord,SupplierProduct,SupplierPriceEvent,SupplierOpeningHistory} from './suppliers';
 import type {DisbursementRequest} from './disbursement-requests';
 export type Role = 'admin'|'cashier'|'pb';
 export type Status = 'Pending'|'Approved'|'Rejected'|'Report Required'|'Report Submitted';
@@ -36,7 +37,7 @@ export const BRANCH_NAME = (id:BranchId) => BRANCHES.find(b=>b.id===id)?.name ||
 export interface User {id:string;username:string;password:string;name:string;role:Role;branch:BranchId;active:boolean;lastLoginDate?:string;}
 export interface Receipt {name:string;data:string}
 export interface FundEntry {
-  id:string;no:string;fund:Fund;kind:'expense'|'replenishment';branch:BranchId;date:string;amount:number;category:string;payee:string;vat:'VAT'|'Non-VAT';voucher:string;receiptNo:string;tin:string;description:string;notes:string;proof?:Receipt;signature?:string;onlineCharge?:number;
+  id:string;no:string;supplierId?:string;supplierProductId?:string;fund:Fund;kind:'expense'|'replenishment';branch:BranchId;date:string;amount:number;category:string;payee:string;vat:'VAT'|'Non-VAT';voucher:string;receiptNo:string;tin:string;description:string;notes:string;proof?:Receipt;signature?:string;onlineCharge?:number;
   status:Status;createdBy:string;createdAt:string;decisionBy?:string;decisionAt?:string;decisionNote?:string;
   plate?:string;car?:string;quantity?:number;unitCost?:number;linkedPosId?:string;purchaseId?:string;checkNo?:string;bank?:string;depositDate?:string;
   /** Frontend-only review stages. Production Accounting and President approvals must be authenticated through shared Supabase. */
@@ -70,6 +71,7 @@ export interface Turnover {id:string;branch:BranchId;date:string;amount:number;n
 export interface ChangeRequest {id:string;type:'Edit RFP'|'Change Branch';entryId:string;branch:BranchId;requestedBy:string;changes:Partial<FundEntry>;original?:Partial<FundEntry>;reason:string;status:'Pending'|'Approved'|'Rejected';createdAt:string;decidedBy?:string;}
 export interface Audit {id:string;at:string;by:string;action:string;detail:string;}
 export interface Database {
+  suppliers?:SupplierRecord[];supplierProducts?:SupplierProduct[];supplierPriceEvents?:SupplierPriceEvent[];supplierOpeningHistory?:SupplierOpeningHistory[];
   users:User[];fundEntries:FundEntry[];disbursementRequests?:DisbursementRequest[];pos:POS[];deletedPOSDrafts?:DeletedPOSDraft[];inventory:InventoryProduct[];stockMovements:StockMovement[];stockRequests:StockCorrection[];stockReceipts:StockReceipt[];stockIssues?:StockIssueRequest[];terminalEvents?:TerminalEvent[];terminalSettlements?:TerminalSettlement[];counts:Count[];incidents:Incident[];turnovers:Turnover[];requests:ChangeRequest[];audit:Audit[];
   settings:{rfBase:Record<BranchId,number>;rfpBase:Record<BranchId,number>;categories:string[];signatories?:{checked:string;approved:string};reportLogo?:Receipt};
 }
@@ -84,7 +86,7 @@ export const number = (v:unknown) => Math.max(0,Number(v)||0);
  * The first administrator creates an account through the one-time setup screen. */
 export function createSeed():Database {
  const empty=():Record<BranchId,number>=>({UCQC:0,UCM:0,UCLP:0,MMM:0});
- return {users:[],fundEntries:[],disbursementRequests:[],pos:[],deletedPOSDrafts:[],inventory:[],stockMovements:[],stockRequests:[],stockReceipts:[],stockIssues:[],terminalEvents:[],terminalSettlements:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[],settings:{rfBase:empty(),rfpBase:empty(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
+ return {suppliers:[],supplierProducts:[],supplierPriceEvents:[],supplierOpeningHistory:[],users:[],fundEntries:[],disbursementRequests:[],pos:[],deletedPOSDrafts:[],inventory:[],stockMovements:[],stockRequests:[],stockReceipts:[],stockIssues:[],terminalEvents:[],terminalSettlements:[],counts:[],incidents:[],turnovers:[],requests:[],audit:[],settings:{rfBase:empty(),rfpBase:empty(),categories:[...RF_CATEGORIES],signatories:{checked:'',approved:''}}};
 }
 
 /** Frontend-only first-run bootstrap. No preconfigured passwords or seed accounts. */

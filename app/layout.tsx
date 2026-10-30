@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './clean-ui.css';
 import './profitability.css';
+import './suppliers.css';
 export const metadata: Metadata = {
   title: 'Underchargers | Fund Management',
   description: 'Underchargers and Mastermind Cashier, Revolving Fund and Parts Fund Management',

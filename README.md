@@ -1,3 +1,9 @@
+## v9.26 — Supplier Master (Admin & Parts Buyer)
+
+New **Suppliers** sidebar module with a clickable supplier directory. Click a supplier to see contact details, branches, products and purchase price history, source RFP purchases with receipt access, and company-specific opening payables. Admin can set supplier opening payable balances (UC/MM separate), create/edit supplier profiles and add manual product prices. Existing and new RFP purchases automatically match known supplier names or create a new supplier and product, with no duplicate expense, stock receipt or AP charge. Existing local data is retained. No live CRM/Accounting synchronization; supplier IDs are local until the future shared supplier database is connected.
+
+Full details: `REVISION_STATUS_V9_26.md`.
+
 ## v9.25 — Admin Profitability Analytics (management estimate)
 
 Admin sidebar → **Profitability Analytics**: an operational management report using browser-local POS, cost/stock and RF/RFP records. Filters cover current/previous month, year or custom dates and combined Underchargers, Mastermind, or an individual branch. The management total in ALL mode is only a comparison; companies remain reported separately. Data is read-only with source-record drilldown and CSV export.
